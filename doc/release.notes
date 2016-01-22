@@ -1,0 +1,9 @@
+!-----------------------------------------------------------------------------
+! Package     : DsPhiFitter
+! Responsible : Laurence Carson, Malcolm John, Tom Hadavizadeh, Lewis Chinery
+! Purpose     : Fitter for extracting relative BFs of DsPhi and DsD0
+!-----------------------------------------------------------------------------
+
+! 2016-01-22 - Laurence Carson
+   - First commit. Code shamelessly based on Bu2D0H_FIT by Malcolm and Paolo.
+

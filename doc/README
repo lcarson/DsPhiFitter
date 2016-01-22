@@ -1,0 +1,36 @@
+
+From the DsPhiFitter/ directory, do:
+
+|> make -f scripts/Makefile
+
+then
+
+|> bin/run
+
+
+********************************************************************
+ The following options are possible:
+
+  -m colon-separated list of modes from:
+                    Ds2KKPi, Ds2PiPiPi, Ds2KPiPi
+
+  -t  <N>  do not fit to data, but generate N toys 
+             if no number is specified, the toys are 
+             read from the below location 
+  -T <dir> location of toy directory.
+  -L <dir> location of data directory.
+             At this location, program looks for:  
+             d2kpi.root, d2pik.root, etc.
+  -N actual fit is not performed
+  -M magnet polarity choice {up,down} default: both
+********************************************************************
+e.g. for running over all modes in data:
+~> bin/run -m Ds2KKPi:Ds2PiPiPi:Ds2KPiPi -L data/DsD0 -d s21:s21r1 -S -M
+
+
+Typical executions (from D0h) are:
+ ~> bin/run -m d2kpi:d2kk -L ~/DATA -M up
+ ~> bin/run -m d2kpi:d2kk -L ~/DATA -O
+ ~> bin/run -m d2kpi -L ~/DATA -T ~/TOYS -t 10
+ ~> bin/run -m d2kpi -T ~/TOYS -t
+
