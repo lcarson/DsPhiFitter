@@ -39,6 +39,11 @@
 #include "CommonTools.h"
 //#include "MultipleCandidates.h"
 
+//**********************
+//***----BLINDING----***
+//**********************
+Bool_t isBlind2(kFALSE);
+
 DsPhiFitting::DsPhiFitting(Parameters* p, TApplication* app)
 : Base()
 , toys("toys")
@@ -48,7 +53,7 @@ DsPhiFitting::DsPhiFitting(Parameters* p, TApplication* app)
 , reducedlist("reduced content")
   //, eventNumber("eventNumber","eventNumber",0,1e99)
 , runNumber("runNumber","runNumber",0,1e99)
-, mB("Bu_D0constDconstPVconst_Bu_M","B mass with constraints", 5220 , 5900, "MeV/#font[12]{c}^{2}")
+, mB("Bu_D0constDconstPVconst_Bu_M","B mass with constraints", 5050 , 5900, "MeV/#font[12]{c}^{2}")
 , mD("D0_M","m(D)",1840, 1892,"MeV/c^{2}")
   //, bach_dll("Bach_PIDK","#Delta(LL)",-200,200.)
 , bdt("D_BDT","MVA",0.4,0.9)
@@ -509,7 +514,7 @@ void DsPhiFitting::DefineModel()
 void DsPhiFitting::RunFullFit(bool draw=true)
 {
   PrintDataSet();
-  double binWidth=5;//MeV/c2
+  double binWidth=10;//MeV/c2
   mB.setBins((mB.getMax()-mB.getMin())/binWidth);
   RooCategory* cat=model->Cat();
   RooSimultaneous*  sim=model->Pdf();
@@ -549,6 +554,23 @@ void DsPhiFitting::RunFullFit(bool draw=true)
   
 
   //---------- Start of drawing --------------
+
+// -------------------------------------------------------------------------
+
+	mB.setRange("lowersideband", 5050, 5230);
+	mB.setRange("uppersideband", 5330, 5900);
+//	mB.setRange("fullfitrange", 5050, 5900);
+
+//	TCut lowersideband = TCut(TString(convertToString(mB) + "<" + convertToString(5230)));
+//	TCut uppersideband = TCut(TString(convertToString(mB) + ">" + convertToString(5330)));
+	TString lowersideband = "mB<5230";
+	TString uppersideband = "mB>5330";
+
+	Double_t nd1(0.), nd2(0.);
+	Double_t Nentries(data->sumEntries());
+
+// -------------------------------------------------------------------------
+
   for(std::vector<std::string>::iterator m=modeList.begin();m!=modeList.end();m++){
     TCanvas* canvas=new TCanvas(Form("canvas_%s%s",(*m).c_str(),(par->sumOverCharges?"_summed":"")),Form("%s",(*m).c_str()),40,0,(chargeList.size()*600),600);
     TCanvas* canRes=0;
@@ -562,19 +584,56 @@ void DsPhiFitting::RunFullFit(bool draw=true)
     for(std::vector<std::string>::iterator c=chargeList.begin();c!=chargeList.end();c++){
       for(std::vector<std::string>::iterator a=magnetList.begin();a!=magnetList.end();a++){
         plot[*c][*a] = mB.frame();
+
+// -------------------------------------------------------------------------
+	if(isBlind2)
+	{
+// -------------------------------------------------------------------------
+
+
+	std::cout << "Keeping Bu region blind!" << std::endl;
+            nd1=(static_cast<Double_t>((data->reduce(lowersideband)->numEntries())))/(static_cast<Double_t>(Nentries)); 
+            nd2=(static_cast<Double_t>((data->reduce(uppersideband)->numEntries())))/(static_cast<Double_t>(Nentries)); 
+
+        cat->setLabel(Form("%s_%s_%s",(*m).c_str(),(*c).c_str(),(*a).c_str()));
+        data->plotOn(plot[*c][*a],RooFit::Cut(Form("cat==cat::%s_%s_%s",(*m).c_str(),(*c).c_str(),(*a).c_str())), RooFit::DrawOption("PZ"), RooFit::CutRange("lowersideband"));
+        data->plotOn(plot[*c][*a],RooFit::Cut(Form("cat==cat::%s_%s_%s",(*m).c_str(),(*c).c_str(),(*a).c_str())), RooFit::DrawOption("PZ"), RooFit::CutRange("uppersideband"));
+
+        if(par->doDraw){
+            sim->plotOn( plot[*c][*a],RooFit::Slice(RooArgSet(*cat)), RooFit::ProjWData(RooArgSet(*cat),*data) ,RooFit::LineWidth(1), RooFit::Range("lowersideband"), RooFit::Normalization(nd1,RooAbsReal::Relative));
+            sim->plotOn( plot[*c][*a],RooFit::Slice(RooArgSet(*cat)), RooFit::ProjWData(RooArgSet(*cat),*data) ,RooFit::LineWidth(1), RooFit::Range("uppersideband"),RooFit:: Normalization(nd2,RooAbsReal::Relative));
+
+            if(canRes) hresid = plot[*c][*a]->pullHist();
+
+            sim->plotOn( plot[*c][*a],RooFit::Slice(RooArgSet(*cat)), RooFit::ProjWData(RooArgSet(*cat),*data) ,RooFit::Components(Form("pdf_dsd0st_%s_%s_%s",(*m).c_str(),(*c).c_str(),(*a).c_str())),RooFit::LineWidth(2),RooFit::LineStyle(kSolid) ,RooFit::LineColor(kGreen), RooFit::Range("lowersideband"), RooFit::Normalization(nd1,RooAbsReal::Relative));
+            sim->plotOn( plot[*c][*a],RooFit::Slice(RooArgSet(*cat)), RooFit::ProjWData(RooArgSet(*cat),*data) ,RooFit::Components(Form("pdf_dsd0st_%s_%s_%s",(*m).c_str(),(*c).c_str(),(*a).c_str())),RooFit::LineWidth(2),RooFit::LineStyle(kSolid) ,RooFit::LineColor(kGreen), RooFit::Range("uppersideband"), RooFit::Normalization(nd2,RooAbsReal::Relative));
+
+            sim->plotOn( plot[*c][*a],RooFit::Slice(RooArgSet(*cat)), RooFit::ProjWData(RooArgSet(*cat),*data) ,RooFit::Components(Form("pdf_dsstd0_%s_%s_%s",(*m).c_str(),(*c).c_str(),(*a).c_str())),RooFit::LineWidth(1),RooFit::LineStyle(kDotted),RooFit::FillStyle(3002), RooFit::DrawOption("F"), RooFit::Range("lowersideband"), RooFit::Normalization(nd1,RooAbsReal::Relative) );
+            sim->plotOn( plot[*c][*a],RooFit::Slice(RooArgSet(*cat)), RooFit::ProjWData(RooArgSet(*cat),*data) ,RooFit::Components(Form("pdf_dsstd0_%s_%s_%s",(*m).c_str(),(*c).c_str(),(*a).c_str())),RooFit::LineWidth(1),RooFit::LineStyle(kDotted),RooFit::FillStyle(3002), RooFit::DrawOption("F"), RooFit::Range("uppersideband"), RooFit::Normalization(nd2,RooAbsReal::Relative) );
+
+            sim->plotOn( plot[*c][*a],RooFit::Slice(RooArgSet(*cat)), RooFit::ProjWData(RooArgSet(*cat),*data) ,RooFit::Components(Form("pdf_comb_dsd0_%s_%s_%s",(*m).c_str(),(*c).c_str(),(*a).c_str())),RooFit::LineWidth(1),RooFit::LineStyle(kDotted), RooFit::Range("lowersideband"),RooFit::Normalization(nd1,RooAbsReal::Relative) );
+            sim->plotOn( plot[*c][*a],RooFit::Slice(RooArgSet(*cat)), RooFit::ProjWData(RooArgSet(*cat),*data) ,RooFit::Components(Form("pdf_comb_dsd0_%s_%s_%s",(*m).c_str(),(*c).c_str(),(*a).c_str())),RooFit::LineWidth(1),RooFit::LineStyle(kDotted), RooFit::Range("uppersideband"), RooFit::Normalization(nd2,RooAbsReal::Relative) );
+
+        } //closes if(par->doDraw)
+	
+
+// -------------------------------------------------------------------------
+	} //closes if(isBlind)
+	else
+	{
         cat->setLabel(Form("%s_%s_%s",(*m).c_str(),(*c).c_str(),(*a).c_str()));
         data->plotOn(plot[*c][*a],RooFit::Cut(Form("cat==cat::%s_%s_%s",(*m).c_str(),(*c).c_str(),(*a).c_str())), RooFit::DrawOption("PZ") );
         if(par->doDraw){
             sim->plotOn( plot[*c][*a],RooFit::Slice(RooArgSet(*cat)), RooFit::ProjWData(RooArgSet(*cat),*data) ,RooFit::LineWidth(1));
             if(canRes) hresid = plot[*c][*a]->pullHist();
             sim->plotOn( plot[*c][*a],RooFit::Slice(RooArgSet(*cat)), RooFit::ProjWData(RooArgSet(*cat),*data) ,RooFit::Components(Form("pdf_dsd0_%s_%s_%s",(*m).c_str(),(*c).c_str(),(*a).c_str())),RooFit::LineWidth(2),RooFit::LineStyle(kSolid) ,RooFit::LineColor(kRed)  ,RooFit::FillColor(kRed) );
-            //sim->plotOn( plot[*c][*a],RooFit::Slice(RooArgSet(*cat)), RooFit::ProjWData(RooArgSet(*cat),*data) ,RooFit::Components(Form("pdf_dsd0st_%s_%s_%s",(*m).c_str(),(*c).c_str(),(*a).c_str())),RooFit::LineWidth(2),RooFit::LineStyle(kSolid) ,RooFit::LineColor(kGreen));
-            //sim->plotOn( plot[*c][*a],RooFit::Slice(RooArgSet(*cat)), RooFit::ProjWData(RooArgSet(*cat),*data) ,RooFit::Components(Form("pdf_dsstd0_%s_%s_%s",(*m).c_str(),(*c).c_str(),(*a).c_str())),RooFit::LineWidth(1),RooFit::LineStyle(kDotted),RooFit::FillStyle(3002), RooFit::DrawOption("F") );
+            sim->plotOn( plot[*c][*a],RooFit::Slice(RooArgSet(*cat)), RooFit::ProjWData(RooArgSet(*cat),*data) ,RooFit::Components(Form("pdf_dsd0st_%s_%s_%s",(*m).c_str(),(*c).c_str(),(*a).c_str())),RooFit::LineWidth(2),RooFit::LineStyle(kSolid) ,RooFit::LineColor(kGreen));
+            sim->plotOn( plot[*c][*a],RooFit::Slice(RooArgSet(*cat)), RooFit::ProjWData(RooArgSet(*cat),*data) ,RooFit::Components(Form("pdf_dsstd0_%s_%s_%s",(*m).c_str(),(*c).c_str(),(*a).c_str())),RooFit::LineWidth(1),RooFit::LineStyle(kDotted),RooFit::FillStyle(3002), RooFit::DrawOption("F") );
             sim->plotOn( plot[*c][*a],RooFit::Slice(RooArgSet(*cat)), RooFit::ProjWData(RooArgSet(*cat),*data) ,RooFit::Components(Form("pdf_comb_dsd0_%s_%s_%s",(*m).c_str(),(*c).c_str(),(*a).c_str())),RooFit::LineWidth(1),RooFit::LineStyle(kDotted) );
-            //if(*m==d2kk){
-	      //put mode-specific PDFs here
-            //}
+
         } //closes if(par->doDraw)
+	} //closes else
+// -------------------------------------------------------------------------
 
 
           float xgutter=0.010;
@@ -662,7 +721,7 @@ void DsPhiFitting::RunFullFit(bool draw=true)
           plot[*c][*a]->SetTitleFont(132,"Y"); plot[*c][*a]->SetLabelFont(132,"Y");
           plot[*c][*a]->SetMaximum(maxH);
           plot[*c][*a]->SetMinimum(0.01);
-          //if((((*m)==d2pik||(*m)==d2pikpipi||(*m)==d2pipipipi||(*m)==d2pikpi0)) and state==BLIND){
+          //if((((*m)==Ds2KKPi||(*m)==Ds2PiPiPi||(*m)==Ds2KPiPi)) and state==BLIND){
           //  canpad[*m][*c][*a]->cd();
           //  TPaveLabel *blindpav = new TPaveLabel(5229,0.000001,5329,maxH-5,"BLIND","");
           //  blindpav->SetBorderSize(0); blindpav->SetTextSize(0.1); blindpav->SetTextAngle(30); 
