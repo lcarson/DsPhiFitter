@@ -13,6 +13,7 @@
 #include "RooSimultaneous.h"
 #include "RooSuperCategory.h"
 #include "RooMultiVarGaussian.h"
+#include "RooUnblindPrecision.h"
 
 #include "Base.h"
 #include "Parameters.h"
@@ -57,9 +58,20 @@ private:
   public :  
 	std::map<std::string,std::map<std::string,std::map<std::string,RooRealVar*> > > yield_dsd0;
        	std::map<std::string,std::map<std::string,std::map<std::string,RooRealVar*> > > yield_comb;
-	//std::map<std::string,std::map<std::string,std::map<std::string,RooRealVar*> > > yield_dsd0st;
-	//std::map<std::string,std::map<std::string,std::map<std::string,RooRealVar*> > > yield_dsstd0;
+//	std::map<std::string,std::map<std::string,std::map<std::string,RooRealVar*> > > yield_dsd0st;
+//	std::map<std::string,std::map<std::string,std::map<std::string,RooRealVar*> > > yield_dsstd0;
+	std::map<std::string,std::map<std::string,std::map<std::string,RooFormulaVar*> > > yield_dsd0st;
+	std::map<std::string,std::map<std::string,std::map<std::string,RooFormulaVar*> > > yield_dsstd0;
+       	std::map<std::string,std::map<std::string,std::map<std::string,RooRealVar*> > > PR_total_yield;
+       	std::map<std::string,std::map<std::string,std::map<std::string,RooRealVar*> > > frac;
+       	std::map<std::string,std::map<std::string,std::map<std::string,RooUnblindPrecision*> > > B_yield_dsd0;
+	std::map<std::string,std::map<std::string,std::map<std::string,double> > > yield_dsd0_double;
+
 };
 
 
 #endif
+
+
+
+
