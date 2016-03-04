@@ -618,7 +618,7 @@ void DsPhiFitting::RunFullFit(bool draw=true)
 	
 
 // -------------------------------------------------------------------------
-	} //closes if(isBlind)
+	} //closes if(isBlind2)
 	else
 	{
         cat->setLabel(Form("%s_%s_%s",(*m).c_str(),(*c).c_str(),(*a).c_str()));
@@ -825,7 +825,7 @@ void DsPhiFitting::DisplayToys()
   std::string toyfile("toy_");
   for(std::vector<std::string>::iterator m=modeList.begin();m!=modeList.end();m++){toyfile+=(*m)+underscore;}
   //toyfile+=std::string(Form("pid%3.1f_",m_pidCut));
-  toyfile+=std::string("toyName.1f_");  //need to check what the name should really be...
+  toyfile+=std::string("toyFile.1f_");  //need to check what the name should really be...
   std::cout <<" Looking for files like: " << par->toylocation+slash+toyfile <<"*"<< std::endl;
   std::vector<std::string> filename;
   CommonTools::getdir(par->toylocation.c_str(),filename);
@@ -854,7 +854,9 @@ void DsPhiFitting::DisplayToys()
     int nv=0;
     RooRealVar* var=0;
     gStyle->SetPalette(1);//gStyle->SetOptStat(0) ;
-    TCanvas* c_all = new TCanvas("canvas_all_pull","Pulls",0,0,800,800) ; c_all->Divide(4,4) ;
+    gStyle->SetOptTitle(0) ; 
+    TCanvas* c_all = new TCanvas("canvas_all_pull","Pulls",0,0,800,800) ; 
+    c_all->Divide(5,4) ;
     RooArgSet* vars = sim->getVariables();
     TIterator* it = vars->createIterator();
     while((var = (RooRealVar*)it->Next())) {
@@ -885,11 +887,13 @@ void DsPhiFitting::DisplayToys()
       c->cd(3) ; gPad->SetLeftMargin(0.15); frame3->GetXaxis()->SetNdivisions(5); frame3->GetYaxis()->SetTitleOffset(1.4); frame3->Draw() ;
       gStyle->SetTitleFontSize(0.1);
       c_all->cd(nv); gPad->SetLeftMargin(0.15); frame3->Draw();
-      ((TPaveText*)gPad->FindObject("pullGauss_paramBox"))->SetTextSize(0.07);
+      ((TPaveText*)gPad->FindObject("pullGauss_paramBox"))->SetTextSize(0.04); //was 0.07
       gPad->Update();
+      c->Print(Form("toysDir/plots/%s.pdf",c->GetName()));
     }
     //c_all->cd(nv+1)->SetLeftMargin(0.15); 
     //mcstudy->plotNLL(RooFit::Bins(20))->Draw();  
+    c_all->Print(Form("toysDir/plots/%s.pdf",c_all->GetName()));
     std::cout<< std::endl;
   }
 
@@ -911,32 +915,62 @@ void DsPhiFitting::DisplayToys()
     
     int ipad=1;
     std::map<int,RooRealVar*> var;
-    TCanvas* c = new TCanvas("canvas_corr","",0,0,1200,800);
+    TCanvas* c = new TCanvas("canvas_correl_1","",0,0,1200,800);
+    TCanvas* c2 = new TCanvas("canvas_correl_2","",0,0,1200,800);
+    TCanvas* c3 = new TCanvas("canvas_correl_3","",0,0,1200,800);
+    c->Divide(7,7); //first three vars => 45 plots
+    c2->Divide(7,7); //next four vars => 46 plots
+    c3->Divide(7,7); //remaining vars => 45 plots
+    //Put variables here  
+    var[0] = new RooRealVar(*(RooRealVar*)model_gen->yield_dsd0[Ds2KKPi][both][both]);          var[0]->setRange(1100, 1300);
+    var[1] = new RooRealVar(*(RooRealVar*)model_gen->yield_dsd0[Ds2PiPiPi][both][both]);        var[1]->setRange(250, 400);
+    var[2] = new RooRealVar(*(RooRealVar*)model_gen->yield_dsd0[Ds2KPiPi][both][both]);         var[2]->setRange(70, 160);
+    var[3] = new RooRealVar(*(RooRealVar*)model_gen->yield_comb[Ds2KKPi][both][both]);          var[3]->setRange(450, 950);
+    var[4] = new RooRealVar(*(RooRealVar*)model_gen->yield_comb[Ds2PiPiPi][both][both]);        var[4]->setRange(250, 550);
+    var[5] = new RooRealVar(*(RooRealVar*)model_gen->yield_comb[Ds2KPiPi][both][both]);         var[5]->setRange(100, 350);
+    var[6] = new RooRealVar(*(RooRealVar*)model_gen->PR_total_yield[Ds2KKPi][both][both]);      var[6]->setRange(1800, 2300);
+    var[7] = new RooRealVar(*(RooRealVar*)model_gen->PR_total_yield[Ds2PiPiPi][both][both]);    var[7]->setRange(350, 700);
+    var[8] = new RooRealVar(*(RooRealVar*)model_gen->PR_total_yield[Ds2KPiPi][both][both]);     var[8]->setRange(100, 300);
 
-    c->Divide(6,4);
-    //Put variables here
-    //var[0] = new RooRealVar(*(RooRealVar*)model_gen->R_cabibbo);var[0]->setRange( 0.07,0.08);
-    //var[1] = new RooRealVar(*(RooRealVar*)model_gen->gamma);    var[1]->setRange( 0.0,3.1);
-  
+    var[9] = new RooRealVar(*(RooRealVar*)model_gen->mean_B[Ds2KKPi][both][both]);              var[9]->setRange(5277, 5281);
+    var[10] = new RooRealVar(*(RooRealVar*)model_gen->sigma_dsd0[Ds2KKPi][both][both]);         var[10]->setRange(12, 16);
+    var[11] = new RooRealVar(*(RooRealVar*)model_gen->sigma_dsd0[Ds2PiPiPi][both][both]);       var[11]->setRange(11, 17);
+    var[12] = new RooRealVar(*(RooRealVar*)model_gen->sigma_dsd0[Ds2KPiPi][both][both]);        var[12]->setRange(8, 20);
+    var[13] = new RooRealVar(*(RooRealVar*)model_gen->comb_slope_dsd0[Ds2KKPi]);                var[13]->setRange(-0.0055, -0.003);
+    var[14] = new RooRealVar(*(RooRealVar*)model_gen->comb_slope_dsd0[Ds2PiPiPi]);              var[14]->setRange(-0.006, -0.002);
+    var[15] = new RooRealVar(*(RooRealVar*)model_gen->comb_slope_dsd0[Ds2KPiPi]);               var[15]->setRange(-0.007, -0.0015);
+    var[16] = new RooRealVar(*(RooRealVar*)model_gen->frac[Ds2KKPi][both][both]);               var[16]->setRange(0.4, 0.6);
+
     std::map<int, std::map<int,TH1*> > hist;
     for(unsigned int i=0;i<var.size()-1;i++){
       for(unsigned int j=i+1;j<var.size();j++){
         hist[i][j] = mcstudy->fitParDataSet().createHistogram(Form("cor_%i_%i",i,j),*var[i],RooFit::YVar(*var[j])) ;
         hist[i][j]->SetMarkerStyle(20);
         hist[i][j]->SetMarkerSize(0.02);
-        hist[i][j]->SetMarkerColor(kBlue-7+i);
-        hist[i][j]->SetLineColor(kBlue-7+i);
         hist[i][j]->SetTitle("");
-        c->cd(ipad);
+        if(i < 3) { c->cd(ipad); 
+        hist[i][j]->SetMarkerColor(kBlue-7+i);
+        hist[i][j]->SetLineColor(kBlue-7+i); }
+        else if(i < 7) { c2->cd(ipad-45); 
+        hist[i][j]->SetMarkerColor(kBlue-7+i);
+        hist[i][j]->SetLineColor(kBlue-7+i); }
+        else { c3->cd(ipad-91); 
+        hist[i][j]->SetMarkerColor(kBlue-11+i);
+        hist[i][j]->SetLineColor(kBlue-11+i); }
         gPad->SetLeftMargin(0.25);
         gPad->SetBottomMargin(0.25);
         hist[i][j]->GetYaxis()->SetTitleOffset(1.4);
+        hist[i][j]->GetXaxis()->SetTitleOffset(1.2);
         hist[i][j]->Draw("box");
         ipad++;
       }
     }
+    
+    c->Print(Form("toysDir/plots/%s.pdf",c->GetName()));
+    c2->Print(Form("toysDir/plots/%s.pdf",c2->GetName()));
+    c3->Print(Form("toysDir/plots/%s.pdf",c3->GetName()));
 
-  }
+  } //end of if(true)
 
 
 } //end of DisplayToys() funcn

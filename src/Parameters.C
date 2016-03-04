@@ -272,7 +272,8 @@ int Parameters::readCommandLine(unsigned int narg, char *argv[])
 	}
 
 
-  if(not genToys){
+     //if(not genToys){
+    if(!genToys && !readToys){
     tokens.clear();
     if(doption==null){
       std::cout << "Dataset unspecified (-d <dset>)." << std::endl;

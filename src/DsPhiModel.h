@@ -64,6 +64,10 @@ private:
 	std::map<std::string,std::map<std::string,std::map<std::string,RooFormulaVar*> > > yield_dsstd0;
        	std::map<std::string,std::map<std::string,std::map<std::string,RooRealVar*> > > PR_total_yield;
        	std::map<std::string,std::map<std::string,std::map<std::string,RooRealVar*> > > frac;
+        std::map< std::string, std::map< std::string, std::map< std::string, RooRealVar* > > > mean_B;
+        std::map<std::string,std::map<std::string,std::map<std::string,RooRealVar*> > > sigma_dsd0;
+        std::map<std::string,RooRealVar*> comb_slope_dsd0;
+
        	std::map<std::string,std::map<std::string,std::map<std::string,RooUnblindPrecision*> > > B_yield_dsd0;
 	std::map<std::string,std::map<std::string,std::map<std::string,double> > > yield_dsd0_double;
 
