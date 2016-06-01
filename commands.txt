@@ -1,0 +1,21 @@
+SetupProject ROOT
+make -f scripts/Makefile
+
+############## ALL MODES; ALL YEARS; BOTH SIGNAL AND NORM; (-Z == In Debug mode) #######
+bin/run -m Ds2PhiPi:Ds2KKPi:Ds2PiPiPi:Ds2KPiPi -L data/Both -d s21:s21r1:s24 -S -M -c DsD0:DsPhi -Z | tee output/allDModes_AllBmodes_AllYears.txt
+
+############## Run BDT optimisation ####################################################
+bin/run -m Ds2KKPi -L data/Full -d s21:s21r1:s24 -S -M -c DsD0 -Z -C MC:BDT:4 | tee output/ManyFits_Ds2KKPi_DsD0_AllYears.txt
+
+############## Batch submit script for Oxford batch system: ############################
+qsub batch_submit.sh 
+
+###################### Extra useful arguments ##########################################
+#
+#       -H      Split into two helicity bins    \
+#       -b <N>  Split into N DsBDT bins         |-- Bin ranges defined in DsPhiFitting.C
+#       -p <N>  Split into N PhiBDT bins        /
+#
+#       -Q      Use saved RooDataSets (quicker)        
+#
+########################################################################################

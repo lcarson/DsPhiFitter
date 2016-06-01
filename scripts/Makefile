@@ -5,6 +5,7 @@ ROOTCFLAGS   := $(shell $(ROOTSYS)/bin/root-config --cflags)
 ROOTLIBS     := $(shell $(ROOTSYS)/bin/root-config --libs)
 
 CXXFLAGS      = -O -Wall -fPIC -g -W
+CXXFLAGS     += -isystem $(shell $(ROOTSYS)/bin/root-config --incdir)
 CXXFLAGS     += $(ROOTCFLAGS) 
 
 LIBS	      = $(ROOTLIBS) -lTreePlayer -lTMVA -lRooFitCore -lRooFit -lMinuit -lFoam -lXMLIO
@@ -28,8 +29,8 @@ run : $(OBJS) $(BINDIR)EventDict.o
 $(BINDIR)EventDict.o : ${DATAOBJS}
 				@echo "Generating dictionary ..."
 				@rm -f ${SRCDIR}EventDict.C ${SRCDIR}EventDict.h
-				@rootcint ${SRCDIR}EventDict.C -c ${DATAOBJS}
-				${CC} $(CXXFLAGS) -c ${SRCDIR}EventDict.C -o $(BINDIR)EventDict.o
+				@rootcint ${SRCDIR}EventDict.C -c ${DATAOBJS} 
+				${CC} $(CXXFLAGS) -I ${PWD} -c ${SRCDIR}EventDict.C -o $(BINDIR)EventDict.o
 
 $(BINDIR)Main.o : 		$(SRCDIR)Main.C
 				@mkdir -p bin

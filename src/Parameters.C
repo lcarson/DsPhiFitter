@@ -22,20 +22,28 @@ Parameters::Parameters(  )
   , locations()
   , moption("NULL")
   , doption("NULL")
+  , coption("NULL")
   , polarity("both")
+  , normcat("both")  
   //, toVary("NULL")
   //, toFix("NULL")
   , readToys(false)
   , genToys(false)
   , nToys(0)
+  , nDsBDTBins(1)
+  , nPhiBDTBins(1)
   , doDraw(true)
   , doFit(true)
   , sumOverCharges(false)
   , batch(false)
+  , debug(false)
+  , splitHel(false)
+  , manyFits(false)
   //, vary(false)
   , binned(false)
   , quickVersion(false)
   , minos(false)
+
 {
   //put variations here
   //variation[kPidEff]=false;	
@@ -57,7 +65,12 @@ void Parameters::help()
   //std::cout << "    -v <type>  vary some quantity according to its error. Choose from:" << std::endl;
   //std::cout << "                 nothing atm... " << std::endl;
   //std::cout << "    -f <str>   colon-separated list of variables to fix in the likelihood scan" << std::endl;
-  std::cout << "    -d <dset>  colon-separated list of strippings. Choose from: s21:s21r1" << std::endl;
+  std::cout << "    -d <dset>  colon-separated list of strippings. Choose from: s21:s21r1:s24" << std::endl;
+  std::cout << "    -c <dset>  colon-separated list of normalisation categories. Choose from: DsD0:DsPhi" << std::endl; 
+  std::cout << "    -b  <N>    Use N bdtDs bins  (default = 1) " << std::endl;
+  std::cout << "    -p  <N>    Use N bdtPhi bins (default = 1) " << std::endl;
+  std::cout << "    -C <Type>:<Method>:<N points> Run many fits and plot significance as a function " << std::endl;
+  std::cout << "               of cut value. Examples: MC:BDT:10 or DATA:BDTG:5 " << std::endl;
   std::cout << "Locations:  " << std::endl;
   std::cout << "    -L <dir> colon-separated list of locations." << std::endl;
   std::cout << "             At these locations, program looks for:  " << std::endl;
@@ -72,8 +85,11 @@ void Parameters::help()
   std::cout << "    -N fit not performed, pdfs not drawn" << std::endl;
   std::cout << "    -M run minos" << std::endl;
   std::cout << "    -X batch mode, no X11" << std::endl;
+  std::cout << "    -Z DEBUG mode" << std::endl;
   std::cout << "    -Q quicker version -- if possible, does not read ntuples" << std::endl;
   std::cout << "      (though non-quick version needed first to make ntuples)" <<std::endl;
+  std::cout << "    -H Split data into helicty bins" << std::endl;
+
   std::cout << "********************************************************************" << std::endl;
   std::cout << "Typical executions are:" << std::endl;
   std::cout << " ~> bin/run -m d2kpi:d2kk:d2pipi -L ~/DATA -a up" << std::endl;
@@ -122,51 +138,77 @@ int Parameters::readCommandLine(unsigned int narg, char *argv[])
       case int('S'):
         sumOverCharges=true;
         break;
-	//case int('v'):
+      case int('Z'):
+        debug=true;
+        break;
+      case int('H'):
+        splitHel=true;
+        break;
+      //case int('C'):
+      //  manyFits=true;
+      //  break;
+	    //case int('v'):
         //if(i==narg){OK=false;break;}if(int(argv[i][0])==int('-')){OK=false;break;}i++;//always needed if option takes an argument
         //toVary=std::string(argv[i-1]);
         //break;
-	//case int('f'):
+	    //case int('f'):
         //if(i==narg){OK=false;break;}if(int(argv[i][0])==int('-')){OK=false;break;}i++;//always needed if option takes an argument
         //toFix=std::string(argv[i-1]);
         //break;
       case int('a'):
       	if(i==narg){OK=false;break;}if(int(argv[i][0])==int('-')){OK=false;break;}i++;//always needed if option takes an argument
-	polarity=std::string(argv[i-1]);
+	      polarity=std::string(argv[i-1]);
         break;
-	//case int('V'):
+	    //case int('V'):
         //if(i==narg){OK=false;break;}if(int(argv[i][0])==int('-')){OK=false;break;}i++;//always needed if option takes an argument
         //variationoption=std::string(argv[i-1]);
         //batch=true;
         //break;
-	//case int('A'):
+	    //case int('A'):
         //automatic=true;
         //if(i==narg){OK=false;break;}if(int(argv[i][0])==int('-')){OK=false;break;}i++;//always needed if option takes an argument
         //autolocation=std::string(argv[i-1]);
         //batch=true;
         //break;
       case int('T'):
-	if(i==narg){OK=false;break;}if(int(argv[i][0])==int('-')){OK=false;break;}i++;//always needed if option takes an argument
-	toylocation=std::string(argv[i-1]);
+	      if(i==narg){OK=false;break;}if(int(argv[i][0])==int('-')){OK=false;break;}i++;//always needed if option takes an argument
+	      toylocation=std::string(argv[i-1]);
       	break;
       case int('L'):
        	if(i==narg){OK=false;break;}if(int(argv[i][0])==int('-')){OK=false;break;}i++;//always needed if option takes an argument
-     	locationoption=std::string(argv[i-1]);
+     	  locationoption=std::string(argv[i-1]);
         break;
       case int('d'):
         if(i==narg){OK=false;break;}if(int(argv[i][0])==int('-')){OK=false;break;}i++;//always needed if option takes an argument
         doption=std::string(argv[i-1]);
         break;
+      case int('c'):
+        if(i==narg){OK=false;break;}if(int(argv[i][0])==int('-')){OK=false;break;}i++;//always needed if option takes an argument
+        coption=std::string(argv[i-1]);
+        break;        
       case int('m'):
         if(i==narg){OK=false;break;}if(int(argv[i][0])==int('-')){OK=false;break;}i++;//always needed if option takes an argument
         moption=std::string(argv[i-1]);
         break;
       case int('t'):
-       	if(i==narg){readToys=true;break;}if(int(argv[i][0])==int('-')){readToys=true;break;}i++;//if option sometimes takes an argument
-	nToys=atoi(argv[i-1]);
-	genToys=true;
-	break;
-       	
+        if(i==narg){readToys=true;break;}if(int(argv[i][0])==int('-')){readToys=true;break;}i++;//if option sometimes takes an argument
+        nToys=atoi(argv[i-1]);
+        genToys=true;
+        break;
+      case int('b'):
+        if(i==narg){OK=false;break;}if(int(argv[i][0])==int('-')){OK=false;break;}i++;//always needed if option takes an argument
+        nDsBDTBins=atoi(argv[i-1]);
+        break;
+      case int('p'):
+        if(i==narg){OK=false;break;}if(int(argv[i][0])==int('-')){OK=false;break;}i++;//always needed if option takes an argument
+        nPhiBDTBins=atoi(argv[i-1]);
+        break;
+      case int('C'):
+        if(i==narg){OK=false;break;}if(int(argv[i][0])==int('-')){OK=false;break;}i++;//always needed if option takes an argument
+        manyFits=true;
+        BDToption=std::string(argv[i-1]);
+        break;
+
       default:
         std::cout << " Don't recognise option '"<< s <<"'" << std::endl;
         OK=false;
@@ -179,21 +221,64 @@ int Parameters::readCommandLine(unsigned int narg, char *argv[])
 
   std::vector<std::string> tokens;
 	if(moption==null){
-		std::cout << " At least one mode must be specified with -m <mode>" << std::endl;
+		std::cout << " At least one Ds decay mode must be specified with -m <mode>" << std::endl;
 		OK=false;
 	}else{
 		CommonTools::split(moption, tokens, ":");
 		for(unsigned int i=0;i<tokens.size();i++){
 			modes[tokens[i]]=true;
-			if(tokens[i]!=Ds2KKPi && tokens[i]!=Ds2PiPiPi && tokens[i]!=Ds2KPiPi){
+			if(tokens[i]!=Ds2PhiPi && tokens[i]!=Ds2KKPi && tokens[i]!=Ds2PiPiPi && tokens[i]!=Ds2KPiPi){
 				std::cout << " Don't recognise mode: " << tokens[i] << std::endl;
 				OK=false;
 			}
 		}
 	}
 	//if(modes[d2pik]    &&not modes[d2kpi]){    std::cout << " Can't fit pik without kpi."         << std::endl; OK=false;}
+  tokens.clear();
+  if(coption==null){
+    std::cout << " At least one B decay mode must be specified with -c <mode>" << std::endl;
+    OK=false;
+  }else{
+    CommonTools::split(coption, tokens, ":");
+    for(unsigned int i=0;i<tokens.size();i++){
+      Bmodes[tokens[i]]=true;
+      if(tokens[i]!=DsD0 && tokens[i]!=DsPhi){
+        std::cout << " Don't recognise mode: " << tokens[i] << std::endl;
+        OK=false;
+      }
+    }
+  }
+  
+  tokens.clear();
+  if(BDToption==null){
+    std::cout << " Specify BDT optimisation type and method: with -c <type>,<method>,<N points>  e.g  -c MC:BDT:10 or -c DATA:BDTG:5" << std::endl;
+    OK=false;
+  }else{
+    CommonTools::split(BDToption, tokens, ":");
+    int count_type=0;
+    int count_method=0;
+    int count_points=0;
+    for(unsigned int i=0;i<tokens.size();i++){
+      if (tokens[i]==MC || tokens[i] == DATA) {
+        MVAType=tokens[i];
+        count_type++;
+      } else if (tokens[i]==BDT || tokens[i]==BDTG || tokens[i]==BDTB ){
+        MVAMethod=tokens[i];
+        count_method++;
+      } else if(atoi(tokens[i].c_str())>0 && atoi(tokens[i].c_str())<999){
+        nBDTPoints = atoi(tokens[i].c_str());
+        count_points++;
+      }else{
+        std::cout << " Don't recognise type/method: " << tokens[i] << std::endl;
+        OK=false;
+      }
+    }
 
-
+    if( count_type!=1 || count_method!=1 || count_points!=1) {
+        std::cout << " Incorrect number of options provided, only use one of each e.g. MC:BDT:5" <<std::endl;
+        OK = false;
+      }
+  }
   
   
 	if(locationoption==null){
@@ -272,8 +357,8 @@ int Parameters::readCommandLine(unsigned int narg, char *argv[])
 	}
 
 
-     //if(not genToys){
-    if(!genToys && !readToys){
+  //if(not genToys){
+  if(!genToys && !readToys){
     tokens.clear();
     if(doption==null){
       std::cout << "Dataset unspecified (-d <dset>)." << std::endl;
@@ -282,8 +367,8 @@ int Parameters::readCommandLine(unsigned int narg, char *argv[])
     CommonTools::split(doption, tokens, ":");
     for(unsigned int i=0;i<tokens.size();i++){
       dsetsReq[tokens[i]]=true;
-      if(tokens[i]!=s21 && tokens[i]!=s21r1){
-        std::cout << " Don't recognise dataset '" << tokens[i] << "'. Expect s21:s21r1" << std::endl;
+      if(tokens[i]!=s21 && tokens[i]!=s21r1 && tokens[i]!=s24){
+        std::cout << " Don't recognise dataset '" << tokens[i] << "'. Expect s21:s21r1:s24" << std::endl;
         OK=false;
       }
       std::map<std::string,bool> tmp;

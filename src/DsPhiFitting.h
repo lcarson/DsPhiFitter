@@ -31,16 +31,17 @@ class DsPhiFitting : public Base {
   void AssignGlobalCategory();
 
   int  LoadDataSet();
-  RooDataSet* MakeDataSet(std::string,std::string);
-  std::string reducedFileName(std::string,std::string);
-  RooDataSet *FinalDataSet(const std::string, const std::string, const std::string, TTree*);
+  RooDataSet* MakeDataSet(std::string,std::string,std::string);
+  std::string reducedFileName(std::string,std::string,std::string);
+  RooDataSet *FinalDataSet(const std::string, const std::string, const std::string, const std::string, TTree*);
   //void IdMultipleCandidates(RooDataSet*);
 
   void PrintDataSet();
 
   void RunFullFit(bool);
-  //void RunManyFits();
+  void RunManyFits();
   void RunManyToys();
+  void SetLHCbStyle(std::string);
 
   void OrderToys(int);
   void DisplayToys();
@@ -52,6 +53,7 @@ private:
   DsPhiModel *model;
   DsPhiModel *model_gen;
   RooDataSet* data;
+  RooDataSet* cutdata;
   RooWorkspace *w;
   RooArgSet inputlist;
   RooArgSet fulllist;
@@ -60,24 +62,77 @@ private:
   //RooRealVar eventNumber; //It doesn't like ULong64_t
   RooRealVar runNumber;
   RooRealVar mB;
-  RooRealVar mD;
+  RooRealVar mD0;
+  RooRealVar mDs;
+  RooRealVar mPhi;
   //RooRealVar bach_dll;
-  RooRealVar bdt;
+  
+  //Data BDT variables 
+  RooRealVar bdtDs;
+  RooRealVar bdtgDs;
+  RooRealVar bdtbDs;
+  RooRealVar bdtD0;
+  RooRealVar bdtgD0;
+  RooRealVar bdtbD0;
+  RooRealVar bdtPhi;
+  RooRealVar bdtgPhi;
+  RooRealVar bdtbPhi;
+  //MC BDT variables
+  RooRealVar bdtMC;
+  RooRealVar bdtgMC;
+  RooRealVar bdtbMC;
+  // PID variables
+  RooRealVar D0_K0_pidk;
+  RooRealVar D0_K1_pidk;
+  RooRealVar D_K_pidk;
+  RooRealVar D_K0_pidk;
+  RooRealVar D_K1_pidk;
+  RooRealVar D_P_pidk;
+  RooRealVar D_P0_pidk;
+  RooRealVar D_P1_pidk;
+  RooRealVar D_P2_pidk;
+
+  RooRealVar helicityD0;
+  RooRealVar helicityPhi;
+  RooRealVar mKK;
   RooRealVar bid;
   RooRealVar L0Hadron_TOS;
   RooRealVar L0_TIS;
+  RooRealVar Hlt2IncPhi_TOS;
+  // 2011 2012 Trigger Lines
   RooRealVar Hlt1TrackAllL0_TOS;
+  RooRealVar Hlt2Topo2BodyBBDT_TOS;
+  RooRealVar Hlt2Topo3BodyBBDT_TOS;
+  RooRealVar Hlt2Topo4BodyBBDT_TOS;
+  // 2015 Trigger Lines
+  RooRealVar Hlt1TrackMVA_TOS;
+  RooRealVar Hlt1TwoTrackMVA_TOS;
   RooRealVar Hlt2Topo2Body_TOS;
   RooRealVar Hlt2Topo3Body_TOS;
   RooRealVar Hlt2Topo4Body_TOS;
+  
+  // Veto Variables
+  /// KKPi
+  RooRealVar KKPi_D_Veto;
+  RooRealVar KKPi_Lc_Veto;
+  /// KPiPi
+  RooRealVar KPiPi_mPiKPi;
+  RooRealVar KPiPi_mPiPiPi;
+  RooRealVar KPiPi_mKKPi;
 
   RooCategory type;
   RooCategory mode;
+  RooCategory Bmode;
   RooCategory magnet;
   RooCategory charge;
-  RooCategory bMassRegion;
+  RooCategory bMassRegion; 
+  RooCategory helBin;
+  RooCategory DsBDTBin;
+  RooCategory PhiBDTBin;
 
-  float m_mD_Mu;
+  float m_mD0_Mu;
+  float m_mDs_Mu;
+  float m_mPhi_Mu;
   double m_bdtCut;
 
   bool state;
@@ -87,12 +142,19 @@ private:
 	
   std::vector<std::string> typeList;
   std::vector<std::string> modeList;
+  std::vector<std::string> BmodeList;
   std::vector<std::string> chargeList;
-  std::vector<std::string> magnetList;
+  std::vector<std::string> magnetList; 
+  std::vector<std::string> HelBinList;
+  std::vector<std::string> DsBDTBinList;
+  std::vector<std::string> PhiBDTBinList;
 
-  std::map<std::string,std::map<std::string,std::map<std::string,TPad*> > > canpad;
-  std::map<std::string,std::map<std::string,std::map<std::string,std::string> > > title;
+  std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,TPad*> > > > > > > canpad;
+  std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::string> > > > > > > title;
+  std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::string> > > > > > > bin_detail;
  
+ 
+  std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,double> > > > > > > > fit_results;
 
 };
 

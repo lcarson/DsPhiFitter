@@ -11,12 +11,32 @@
 
 Base::Base()
 	: toy("toy")
-        , s21("s21")
+  , s21("s21")
 	, s21r1("s21r1")
-	, Ds2KKPi("Ds2KKPi")
+  , s24("s24")
+  , Ds2PhiPi("Ds2PhiPi")
+  , Ds2KKPi("Ds2KKPi")
 	, Ds2PiPiPi("Ds2PiPiPi")
-	, Ds2KPiPi("Ds2KPiPi")
+  , Ds2KPiPi("Ds2KPiPi")
+  , DsD0("DsD0")
+  , DsPhi("DsPhi")
+  , Helbin1("Helbin1")
+  , Helbin2("Helbin2")
+  , DsBDTbin1("DsBDTbin1")
+  , DsBDTbin2("DsBDTbin2")
+  , PhiBDTbin1("PhiBDTbin1")
+  , PhiBDTbin2("PhiBDTbin2")
 	, signal("signal")
+  , Ds("Ds")
+  , Phi("Phi")
+  , BDT("BDT")
+  , BDTG("BDTG")
+  , BDTB("BDTB")
+  , DATA("DATA")
+  , MC("MC")
+  , cont("cont")
+  , surf("surf")
+  , norm("norm")
 	  //, buffer("buffer")
 	  //, sidebd("sidebd")
 	, bckgrd("bckgrd")
@@ -28,7 +48,7 @@ Base::Base()
 	, sensitive("sensitive")
 	, dot(".")
 	, slash("/")
-        , colon(":")
+  , colon(":")
 	, underscore("_")
 	, ws("WS")
 	, coda(".root")
@@ -41,8 +61,12 @@ Base::Base()
   , BLIND(true)
 	, UNBLIND(false)
   , allmodeList()
+  , allBmodeList()
   , allchargeList()
   , allmagnetList()
+  , allHelbinList()
+  , allDsBDTbinList()
+  , allPhiBDTbinList()
 {
   types.push_back(signal);
   defineTypeColors();
@@ -53,15 +77,25 @@ Base::Base()
     used.insert(std::make_pair(type,false));
   }
 
+  allmodeList.push_back(Ds2PhiPi);
   allmodeList.push_back(Ds2KKPi);
   allmodeList.push_back(Ds2PiPiPi);
   allmodeList.push_back(Ds2KPiPi);
+  allBmodeList.push_back(DsD0);
+  allBmodeList.push_back(DsPhi);
   allchargeList.push_back(both);
   allchargeList.push_back(minus);
   allchargeList.push_back(plus);
   allmagnetList.push_back(up);
   allmagnetList.push_back(dn);
   allmagnetList.push_back(both);
+  allHelbinList.push_back(Helbin1);
+  allHelbinList.push_back(Helbin2);
+  allHelbinList.push_back(both);
+  allDsBDTbinList.push_back(DsBDTbin1);
+  allDsBDTbinList.push_back(DsBDTbin2);
+  allPhiBDTbinList.push_back(PhiBDTbin1);
+  allPhiBDTbinList.push_back(PhiBDTbin2);
 }
 
 void Base::defineTypeColors()
