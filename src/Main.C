@@ -23,6 +23,7 @@ int main(int argc, char *argv[])
     gROOT->SetBatch(kTRUE);
     RooMsgService::instance().setGlobalKillBelow(RooFit::FATAL);
   }
+  if(par->debug) std::cout<<"Running: DsPhiFitting"<<std::endl;
   DsPhiFitting fit(par,&app);
   std::cout<<std::endl;
 }
