@@ -13,6 +13,8 @@
 
 #include "Base.h"
 #include "DsPhiModel.h"
+#include "PhiModel.h"
+#include "DsModel.h"
 
 class TTree;
 class TNtuple;
@@ -40,6 +42,7 @@ class DsPhiFitting : public Base {
 
   void RunFullFit(bool);
   void RunManyFits();
+  void RunEfficiency();
   void RunManyToys();
   void SetLHCbStyle(std::string);
 
@@ -52,6 +55,8 @@ private:
 	
   DsPhiModel *model;
   DsPhiModel *model_gen;
+  PhiModel   *model_phi;
+  DsModel    *model_ds;
   RooDataSet* data;
   RooDataSet* cutdata;
   RooWorkspace *w;
@@ -99,6 +104,7 @@ private:
   RooRealVar L0Hadron_TOS;
   RooRealVar L0_TIS;
   RooRealVar Hlt2IncPhi_TOS;
+  RooRealVar Hlt2PhiIncPhi_TOS;
   // 2011 2012 Trigger Lines
   RooRealVar Hlt1TrackAllL0_TOS;
   RooRealVar Hlt2Topo2BodyBBDT_TOS;
@@ -115,10 +121,17 @@ private:
   /// KKPi
   RooRealVar KKPi_D_Veto;
   RooRealVar KKPi_Lc_Veto;
+
+  RooRealVar deltaMass;
+  RooRealVar deltaMass2;
   /// KPiPi
   RooRealVar KPiPi_mPiKPi;
   RooRealVar KPiPi_mPiPiPi;
   RooRealVar KPiPi_mKKPi;
+
+  //FDChi2
+  RooRealVar D_FDCHI2;
+  RooRealVar D0_FDCHI2;
 
   RooCategory type;
   RooCategory mode;
@@ -141,6 +154,7 @@ private:
   float x[20];
 	
   std::vector<std::string> typeList;
+  std::vector<std::string> yearList;
   std::vector<std::string> modeList;
   std::vector<std::string> BmodeList;
   std::vector<std::string> chargeList;
@@ -149,13 +163,16 @@ private:
   std::vector<std::string> DsBDTBinList;
   std::vector<std::string> PhiBDTBinList;
 
-  std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,TPad*> > > > > > > canpad;
-  std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::string> > > > > > > title;
-  std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::string> > > > > > > bin_detail;
+ std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,TPad*> > > > > > > canpad;
+ std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::string> > > > > > > > title;
+ std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::string> > > > > > > > bin_detail;
  
  
-  std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,double> > > > > > > > fit_results;
+ std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,double> > > > > > > > > fit_results;
+ std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,double> > > > > > > > fit_results_phi;
+ std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,double> > > > > > > > fit_results_ds;
 
+ std::map<std::string,double> Initial_value;
 };
 
 #endif

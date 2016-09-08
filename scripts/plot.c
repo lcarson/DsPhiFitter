@@ -10,9 +10,9 @@ std::string oneD;
 std::string cont;
 std::string surf;
 
-void plot_cont(int,double[],double[],double[],std::string);
-void plot_1D(int,double[],double[],std::string);
-void plot_surf(int,double[],double[],double[],std::string);
+void plot_cont(int,double[],double[],double[],std::map<std::string,std::string>);
+void plot_1D(int,double[],double[],std::map<std::string,std::string>);
+void plot_surf(int,double[],double[],double[],std::map<std::string,std::string>);
 void plot(std::string, std::string, std::string, std::string);
 
 /*void plot(int whichone = 0){
@@ -42,6 +42,14 @@ void plot(std::string datatype="MC",std::string method="BDT",std::string mode = 
   }
 
   std::string dir = Form("results/manyfits/text/%s/%s/%s/",mode.c_str(),method.c_str(),datatype.c_str());
+
+  std::map<std::string,std::string> config;
+  config["datatype"] = datatype;
+  config["method"]   = method;
+  config["mode"]     = mode;
+  config["years"]    = years;
+  config["dir"]      = dir;
+
   std::vector<std::string> files;
   getdir(dir,files);
   std::cout << "Number of files: " << files.size() << std::endl; 
@@ -83,6 +91,183 @@ void plot(std::string datatype="MC",std::string method="BDT",std::string mode = 
       count++;
     }
   }
+  
+  // Get Signal effiencies 
+  std::string dir_eff = Form("/home/hadavizadeh/Bc_Analysis/DataStripping/B_PhiD/Efficiency_Study/DV_v41r1/MC_Method/text/%s/",mode.c_str());
+  
+  std::vector<std::string> files_eff;
+  getdir(dir_eff,files_eff);
+
+  std::cout << "Number of efficiency files: " << files_eff.size() << std::endl; 
+  if (files_eff.size()==0) return;
+  std::vector<double> sig_efficiency;
+  for(int i=0; i<cut_ds.size();i++){
+    std::cout << "Looking for signal efficiency of cuts: Ds" << cut_ds[i] << " and Phi: " << cut_phi[i] <<std::endl;
+    int found = 0;
+    if (years=="Run1"){
+      double eff_2011_dn;
+      double eff_2011_up;
+      double eff_2012_dn;
+      double eff_2012_up;
+      int found_11_dn=0;
+      int found_11_up=0;
+      int found_12_dn=0;
+      int found_12_up=0;
+      // ========== Find 2011 MagDown Eff. ==================
+      std::string text_filename_11_dn  = Form("Eff_%s_%s_%s_%s_%f_%f.txt", "Down", "2011",  "Phi2KK" ,mode.c_str(),cut_phi[i],cut_ds[i]);
+      for(std::vector<std::string>::iterator it=files_eff.begin();it!=files_eff.end();it++){ 
+        if((*it)==text_filename_11_dn){
+          found_11_dn++;
+          std::cout<< "Found file: " << text_filename_11_dn << std::endl;        
+          std::string filename = (*it);
+          std::vector<std::string> params;
+          std::ifstream input;
+          input.open((dir_eff+filename).c_str(),std::ifstream::in);
+          std::string line = "";
+          getline(input,line);
+          std::cout<< "Line read from file: "<< line << std::endl;
+          split(line,params,":");
+          std::cout << "Signal efficiency: " << atof(params[4].c_str()) * 100 << "%" <<std::endl;
+          eff_2011_dn = atof(params[4].c_str());
+        }
+      }
+      if(found_11_dn==0) {
+        std::cout<< "WARNING =====> Missing file:" << text_filename_11_dn <<std::endl;
+      }
+      // ========== Find 2011 MagUp Eff. ==================
+      std::string text_filename_11_up  = Form("Eff_%s_%s_%s_%s_%f_%f.txt", "Up", "2011",  "Phi2KK" ,mode.c_str(),cut_phi[i],cut_ds[i]);
+      for(std::vector<std::string>::iterator it=files_eff.begin();it!=files_eff.end();it++){ 
+        if((*it)==text_filename_11_up){
+          found_11_up++;
+          std::cout<< "Found file: " << text_filename_11_up << std::endl;        
+          std::string filename = (*it);
+          std::vector<std::string> params;
+          std::ifstream input;
+          input.open((dir_eff+filename).c_str(),std::ifstream::in);
+          std::string line = "";
+          getline(input,line);
+          std::cout<< "Line read from file: "<< line << std::endl;
+          split(line,params,":");
+          std::cout << "Signal efficiency: " << atof(params[4].c_str()) * 100 << "%" <<std::endl;
+          eff_2011_up = atof(params[4].c_str());
+        }
+      }
+      if(found_11_up==0) {
+        std::cout<< "WARNING =====> Missing file:" << text_filename_11_up <<std::endl;
+      }
+      // ========== Find 2012 MagDown Eff. ==================
+      std::string text_filename_12_dn  = Form("Eff_%s_%s_%s_%s_%f_%f.txt", "Down", "2012",  "Phi2KK" ,mode.c_str(),cut_phi[i],cut_ds[i]);
+      for(std::vector<std::string>::iterator it=files_eff.begin();it!=files_eff.end();it++){ 
+        if((*it)==text_filename_12_dn){
+          found_12_dn++;
+          std::cout<< "Found file: " << text_filename_12_dn << std::endl;        
+          std::string filename = (*it);
+          std::vector<std::string> params;
+          std::ifstream input;
+          input.open((dir_eff+filename).c_str(),std::ifstream::in);
+          std::string line = "";
+          getline(input,line);
+          std::cout<< "Line read from file: "<< line << std::endl;
+          split(line,params,":");
+          std::cout << "Signal efficiency: " << atof(params[4].c_str()) * 100 << "%" <<std::endl;
+          eff_2012_dn = atof(params[4].c_str());
+        }
+      }
+      if(found_12_dn==0) {
+        std::cout<< "WARNING =====> Missing file:" << text_filename_12_dn <<std::endl;
+      }
+      // ========== Find 2012 MagUp Eff. ==================
+      std::string text_filename_12_up  = Form("Eff_%s_%s_%s_%s_%f_%f.txt", "Up", "2012",  "Phi2KK" ,mode.c_str(),cut_phi[i],cut_ds[i]);
+      for(std::vector<std::string>::iterator it=files_eff.begin();it!=files_eff.end();it++){ 
+        if((*it)==text_filename_12_up){
+          found_12_up++;
+          std::cout<< "Found file: " << text_filename_12_up << std::endl;        
+          std::string filename = (*it);
+          std::vector<std::string> params;
+          std::ifstream input;
+          input.open((dir_eff+filename).c_str(),std::ifstream::in);
+          std::string line = "";
+          getline(input,line);
+          std::cout<< "Line read from file: "<< line << std::endl;
+          split(line,params,":");
+          std::cout << "Signal efficiency: " << atof(params[4].c_str()) * 100 << "%" <<std::endl;
+          eff_2012_up = atof(params[4].c_str());
+        }
+      }
+      if(found_12_up==0) {
+        std::cout<< "WARNING =====> Missing file:" << text_filename_12_up <<std::endl;
+      }
+      double average = (eff_2011_dn +eff_2011_up+eff_2012_dn+eff_2012_up)/4;
+      sig_efficiency.push_back(average);
+    } else if(years=="Run2"){
+      double eff_2015_dn;
+      double eff_2015_up;
+      int found_15_dn;
+      int found_15_up;
+      // ========== Find 2015 MagDown Eff. ==================
+      std::string text_filename_15_dn  = Form("Eff_%s_%s_%s_%s_%f_%f.txt", "Down", "2015",  "Phi2KK" ,mode.c_str(),cut_phi[i],cut_ds[i]);
+      for(std::vector<std::string>::iterator it=files_eff.begin();it!=files_eff.end();it++){ 
+        if((*it)==text_filename_15_dn){
+          found_15_dn++;
+          std::cout<< "Found file: " << text_filename_15_dn << std::endl;        
+          std::string filename = (*it);
+          std::vector<std::string> params;
+          std::ifstream input;
+          input.open((dir_eff+filename).c_str(),std::ifstream::in);
+          std::string line = "";
+          getline(input,line);
+          std::cout<< "Line read from file: "<< line << std::endl;
+          split(line,params,":");
+          std::cout << "Signal efficiency: " << atof(params[4].c_str()) * 100 << "%" <<std::endl;
+          eff_2015_dn = atof(params[4].c_str());
+        }
+      }
+      if(found_15_dn==0) {
+        std::cout<< "WARNING =====> Missing file:" << text_filename_15_dn <<std::endl;
+      }
+      // ========== Find 2015 MagUp Eff. ==================
+      std::string text_filename_15_up  = Form("Eff_%s_%s_%s_%s_%f_%f.txt", "Up", "2015",  "Phi2KK" ,mode.c_str(),cut_phi[i],cut_ds[i]);
+      for(std::vector<std::string>::iterator it=files_eff.begin();it!=files_eff.end();it++){ 
+        if((*it)==text_filename_15_up){
+          found_15_up++;
+          std::cout<< "Found file: " << text_filename_15_up << std::endl;        
+          std::string filename = (*it);
+          std::vector<std::string> params;
+          std::ifstream input;
+          input.open((dir_eff+filename).c_str(),std::ifstream::in);
+          std::string line = "";
+          getline(input,line);
+          std::cout<< "Line read from file: "<< line << std::endl;
+          split(line,params,":");
+          std::cout << "Signal efficiency: " << atof(params[4].c_str()) * 100 << "%" <<std::endl;
+          eff_2015_up = atof(params[4].c_str());
+        }
+      }
+      if(found_15_up==0) {
+        std::cout<< "WARNING =====> Missing file:" << text_filename_15_up <<std::endl;
+      }
+      double average = (eff_2015_dn +eff_2015_up)/2;
+      sig_efficiency.push_back(average);
+    }
+
+
+  }
+
+  std::cout<<std::endl;
+  std::cout << "Ds cuts:" << std::endl;
+  for(int i=0; i<cut_ds.size();i++){
+    std::cout << cut_ds[i] << std::endl;
+  }
+  std::cout<<std::endl;
+
+  std::cout << "D0 cuts:" << std::endl;
+  for(int i=0; i<cut_phi.size();i++){
+    std::cout << cut_phi[i] << std::endl;
+  }
+  std::cout<<std::endl;
+
+  double* n_sig_eff_ar   = new double[count];
+
   double* n_sig_ar   = new double[count];
   double* n_bkg_ar   = new double[count];
   double* cut_ds_ar  = new double[count];
@@ -97,6 +282,7 @@ void plot(std::string datatype="MC",std::string method="BDT",std::string mode = 
   double* n_pursig_ar  = new double[count];
  
   for(int i=0; i<count; i++){
+    n_sig_eff_ar[i] = sig_efficiency[i];
     n_sig_ar[i]   = n_sig[i];
     n_bkg_ar[i]   = n_bkg[i];
     if (datatype=="DATA"){
@@ -106,7 +292,9 @@ void plot(std::string datatype="MC",std::string method="BDT",std::string mode = 
       cut_MC_ar[i]  = cut_MC[i];
     }
 
-    n_punzi_ar[i] = n_sig[i] / (2.5 + sqrt(n_bkg[i]));
+    // -------- Definitions of FOMs ------------------
+    //n_punzi_ar[i] = n_sig[i] / (2.5 + sqrt(n_bkg[i]));
+    n_punzi_ar[i] = sig_efficiency[i] / (2.5 + sqrt(n_bkg[i]));
     if (n_bkg[i]+n_sig[i]>0){ 
       n_signi_ar[i] = n_sig[i] / sqrt(n_bkg[i]+n_sig[i]);
       n_sigaj_ar[i] = (ratio*n_sig[i]) / sqrt(n_bkg[i]+ratio*n_sig[i]);
@@ -116,6 +304,7 @@ void plot(std::string datatype="MC",std::string method="BDT",std::string mode = 
     }
     n_diff_ar[i] = n_punzi_ar[i]/n_signi_ar[i];
     n_purity_ar[i] = n_sig[i]/(n_sig[i]+n_bkg[i]);
+    if((n_sig[i]+n_bkg[i])<0.01) n_purity_ar[i] = 0; 
     n_pursig_ar[i] = n_purity_ar[i]*n_punzi_ar[i];
 
     if (datatype=="DATA") std::cout << "Cut Ds:"<< cut_ds_ar[i] << ", \t Cut Phi: " << cut_phi_ar[i]<<", \t NSig: "<<n_sig_ar[i]<<", \t NBKG: " << n_bkg_ar[i] << ", \t Punzi: "<<n_punzi_ar[i]<<", \t Significance: " << n_signi_ar[i] <<", \t Significance adjusted: " << n_sigaj_ar[i] << std::endl;
@@ -128,52 +317,59 @@ void plot(std::string datatype="MC",std::string method="BDT",std::string mode = 
     std::cout << "Found " << count << " files..." <<std::endl;
   }
   if(datatype=="MC"){
-    //plot_1D(count,cut_MC_ar,n_punzi_ar,dir);
+    plot_1D(count,cut_MC_ar,n_punzi_ar,config);
     //plot_1D(count,cut_MC_ar,n_signi_ar,dir);
-    plot_1D(count,cut_MC_ar,n_pursig_ar,dir);
+    //plot_1D(count,cut_MC_ar,n_pursig_ar,dir);
   } else {
-    //plot_cont(count,cut_ds_ar,cut_phi_ar,n_punzi_ar,dir);
+    plot_cont(count,cut_ds_ar,cut_phi_ar,n_punzi_ar,config);
     //plot_cont(count,cut_ds_ar,cut_phi_ar,n_signi_ar,dir);
     //plot_cont(count,cut_ds_ar,cut_phi_ar,n_sigaj_ar,dir);
-    plot_cont(count,cut_ds_ar,cut_phi_ar,n_pursig_ar,dir);
+    //plot_cont(count,cut_ds_ar,cut_phi_ar,n_pursig_ar,dir);
   }
 
 std::cout<<"Done" <<std::endl;
 }
 
-void plot_1D(int n_p,double cut_value_MC [],double Punzi_1D [], std::string dir){
+void plot_1D(int n_p,double cut_value_MC [],double Punzi_1D [], std::map<std::string,std::string> config){
   SetLHCbStyle(oneD);
-  TCanvas *cav_punzi = new TCanvas("name","Title",200,10,700,500);
+  TCanvas *cav_punzi = new TCanvas(Form("%s_%s_punzi_%s",config["mode"].c_str(),config["method"].c_str(),config["years"].c_str()),Form("%s %s Punzi as function of cut value",config["mode"].c_str(),config["method"].c_str()),200,10,700,500);
   TGraph  *gr_punzi  = new TGraph(n_p, cut_value_MC, Punzi_1D);
-  gr_punzi->SetTitle("Punzi    S/(5/2 + sqrt(B));MC BDT Cut Value;Punzi");  
+  gr_punzi->SetTitle(Form("Punzi    S/(5/2 + sqrt(B));MC %s Cut Value;Punzi",config["method"].c_str()));  
   gr_punzi->Draw("AP");
+
+  cav_punzi->Print(Form("%s%s_MC.eps",config["dir"].c_str(),cav_punzi->GetName()));
+  cav_punzi->Print(Form("%s%s_MC.pdf",config["dir"].c_str(),cav_punzi->GetName()));
 }
 
-void plot_surf(int n_p,double cut_value_1D_Ds[],double cut_value_1D_Phi[],double Punzi_2D [], std::string dir){
+void plot_surf(int n_p,double cut_value_1D_Ds[],double cut_value_1D_Phi[],double Punzi_2D [], std::map<std::string,std::string> config){
   SetLHCbStyle(surf);
   std::cout << "Set Style" << std::endl;
-  TCanvas *cav_punzi = new TCanvas("Ds2KKPi_BDT_punzi","Ds2KKPi BDT Punzi as function of cut value",200,10,700,500);
+  TCanvas *cav_punzi = new TCanvas(Form("%s_%s_punzi_%s",config["mode"].c_str(),config["method"].c_str(),config["years"].c_str()),Form("%s %s Punzi as function of cut value",config["mode"].c_str(),config["method"].c_str()),200,10,700,500);
   std::cout << "Made Canvas" << std::endl;
   TGraph2D *gr_punzi = new TGraph2D(n_p, cut_value_1D_Ds, cut_value_1D_Phi, Punzi_2D); 
   std::cout << "Made TGraph2D" << std::endl;  
-  gr_punzi->SetTitle("Punzi    S/(5/2 + sqrt(B));D BDT Cut Value;D0 BDT Cut Value;Punzi");  
+  gr_punzi->SetTitle(Form("Punzi    S/(5/2 + sqrt(B));D %s Cut Value;D0 %s Cut Value;Punzi",config["method"].c_str(),config["method"].c_str()));  
   std::cout << "Set Title" << std::endl;
   gr_punzi->Draw("surf1z");
-  //cav_punzi->Draw();
 
-  TFile tfile(Form("%sPlot.root",dir.c_str()),"RECREATE");
-  cav_punzi->Write();
-  gr_punzi->Write(); 
-  tfile.Close();
-
+  cav_punzi->Print(Form("%s%s_surf.eps",config["dir"].c_str(),cav_punzi->GetName()));
+  cav_punzi->Print(Form("%s%s_surf.pdf",config["dir"].c_str(),cav_punzi->GetName()));
+    
+  //TFile tfile(Form("%sPlot.root",dir.c_str()),"RECREATE");
+  //cav_punzi->Write();
+  //gr_punzi->Write(); 
+  //tfile.Close();  
 }
 
-void plot_cont(int n_p,double cut_value_1D_Ds[],double cut_value_1D_Phi[],double Punzi_2D [], std::string dir){
+void plot_cont(int n_p,double cut_value_1D_Ds[],double cut_value_1D_Phi[],double Punzi_2D [], std::map<std::string,std::string> config){
   SetLHCbStyle(cont);
-  TCanvas *cav_punzi3 = new TCanvas("Ds2KKPi_BDT_punzi_cont","Ds2KKPi BDT Punzi as function of cut value",200,10,700,500);
+  TCanvas *cav_punzi3 = new TCanvas(Form("%s_%s_punzi_%s",config["mode"].c_str(),config["method"].c_str(),config["years"].c_str()),Form("%s %s Punzi as function of cut value",config["mode"].c_str(),config["method"].c_str()),200,10,700,500);
   TGraph2D *gr_punzi2 = new TGraph2D(n_p, cut_value_1D_Ds, cut_value_1D_Phi, Punzi_2D);   
-  gr_punzi2->SetTitle("Punzi    S/(5/2 + sqrt(B));D BDTG Cut Value;D0 BDTG Cut Value;Punzi"); 
+  gr_punzi2->SetTitle(Form("Punzi    S/(5/2 + sqrt(B));D %s Cut Value;D0 %s Cut Value;Punzi",config["method"].c_str(),config["method"].c_str())); 
   gr_punzi2->Draw("colz");
+
+  cav_punzi3->Print(Form("%s%s_cont.eps",config["dir"].c_str(),cav_punzi3->GetName()));
+  cav_punzi3->Print(Form("%s%s_cont.pdf",config["dir"].c_str(),cav_punzi3->GetName()));
 }
 
 void SetLHCbStyle(std::string type = ""){

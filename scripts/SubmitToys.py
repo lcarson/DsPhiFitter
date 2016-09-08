@@ -12,7 +12,7 @@ def makeSubmitScript(toyDir, seed, n, wall):
     os.system("echo '. SetupProject.sh Gaudi ROOT' >> BatchSubmit_"+seed+".sh");
 
     os.system("echo 'cd "+dirname+"/../' >> BatchSubmit_"+seed+".sh")
-    os.system("echo 'bin/run -m Ds2PhiPi:Ds2KKPi:Ds2PiPiPi:Ds2KPiPi -d s21:s21r1:s24 -S -M -c DsD0:DsPhi:DsPhiSide -Z -t "+n+" -T toysDir/ -s "+seed+"'>> BatchSubmit_"+seed+".sh");
+    os.system("echo 'bin/run -H -m Ds2PhiPi:Ds2KKPi:Ds2PiPiPi:Ds2KPiPi -d s21:s21r1:s24 -S -M -c DsD0:DsPhi:DsPhiSide -Z -t "+n+" -T toysDir/ -s "+seed+"'>> BatchSubmit_"+seed+".sh");
     os.chdir(initDir)
 
 def makePlotScript(toyDir, wall):
@@ -26,7 +26,7 @@ def makePlotScript(toyDir, wall):
     os.system("echo '. SetupProject.sh Gaudi ROOT' >> MakePlots.sh");
 
     os.system("echo 'cd "+dirname+"/../' >> MakePlots.sh")
-    os.system("echo 'bin/run -m Ds2PhiPi:Ds2KKPi:Ds2PiPiPi:Ds2KPiPi -d s21:s21r1:s24 -S -M -c DsD0:DsPhi:DsPhiSide -Z -t -T toysDir/ -X'>> MakePlots.sh");
+    os.system("echo 'bin/run -H -m Ds2PhiPi:Ds2KKPi:Ds2PiPiPi:Ds2KPiPi -d s21:s21r1:s24 -S -M -c DsD0:DsPhi:DsPhiSide -Z -t -T toysDir/ -X'>> MakePlots.sh");
     os.chdir(initDir)
 
 basedir = "/data/lhcb/users/hadavizadeh/B2DsPhi/ToyStudies"

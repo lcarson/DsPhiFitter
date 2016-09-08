@@ -15,9 +15,9 @@ BINDIR        = ${PWD}/bin/
 SRCDIR        = ${PWD}/src/
 
 OBJS	      = $(BINDIR)Main.o $(BINDIR)Base.o $(BINDIR)CommonTools.o $(BINDIR)Parameters.o 
-OBJS			 += $(BINDIR)DsPhiFitting.o $(BINDIR)DsPhiModel.o
+OBJS			 += $(BINDIR)DsPhiFitting.o $(BINDIR)DsPhiModel.o $(BINDIR)PhiModel.o $(BINDIR)DsModel.o
 
-DATAOBJS	  = $(SRCDIR)RooHILLdini.C $(SRCDIR)RooHORNSdini.C 
+DATAOBJS	  = $(SRCDIR)RooHILLdini.C $(SRCDIR)RooHORNSdini.C $(SRCDIR)RooLITTLEHORNSdini.C
 
 #-------------------------------------------------------------
 all: run
@@ -51,11 +51,20 @@ $(BINDIR)DsPhiFitting.o : 	$(SRCDIR)DsPhiFitting.C $(SRCDIR)DsPhiFitting.h
 $(BINDIR)DsPhiModel.o :		$(SRCDIR)DsPhiModel.C $(SRCDIR)DsPhiModel.h
 				${CC} $(CXXFLAGS) -c $(SRCDIR)DsPhiModel.C -o $(BINDIR)DsPhiModel.o
 
+$(BINDIR)PhiModel.o :		$(SRCDIR)PhiModel.C $(SRCDIR)PhiModel.h
+				${CC} $(CXXFLAGS) -c $(SRCDIR)PhiModel.C -o $(BINDIR)PhiModel.o
+
+$(BINDIR)DsModel.o :		$(SRCDIR)DsModel.C $(SRCDIR)DsModel.h
+				${CC} $(CXXFLAGS) -c $(SRCDIR)DsModel.C -o $(BINDIR)DsModel.o
+
 $(BINDIR)RooHILLdini.o :        $(SRCDIR)RooHILLdini.C $(SRCDIR)RooHILLdini.h
 				${CC} $(CXXFLAGS) -c $(SRCDIR)RooHILLdini.C -o $(BINDIR)RooHILLdini.o
 
 $(BINDIR)RooHORNSdini.o :       $(SRCDIR)RooHORNSdini.C $(SRCDIR)RooHORNSdini.h
 				${CC} $(CXXFLAGS) -c $(SRCDIR)RooHORNSdini.C -o $(BINDIR)RooHORNSdini.o
+
+$(BINDIR)RooLITTLEHORNSdini.o : $(SRCDIR)RooLITTLEHORNSdini.C $(SRCDIR)RooLITTLEHORNSdini.h
+				${CC} $(CXXFLAGS) -c $(SRCDIR)RooLITTLEHORNSdini.C -o $(BINDIR)RooLITTLEHORNSdini.o
 
 
 #-------------------------------------------------------
