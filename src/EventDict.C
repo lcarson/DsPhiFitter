@@ -40,6 +40,7 @@ namespace std {} using namespace std;
 // Header files passed as explicit arguments
 #include "/home/hadavizadeh/Bc_Analysis/DataStripping/B_PhiD/Git_Fit/Test/DsPhiFitter/src/RooHILLdini.C"
 #include "/home/hadavizadeh/Bc_Analysis/DataStripping/B_PhiD/Git_Fit/Test/DsPhiFitter/src/RooHORNSdini.C"
+#include "/home/hadavizadeh/Bc_Analysis/DataStripping/B_PhiD/Git_Fit/Test/DsPhiFitter/src/RooLITTLEHORNSdini.C"
 
 // Header files passed via #pragma extra_include
 
@@ -101,6 +102,36 @@ namespace ROOT {
    }
    // Static variable to force the class initialization
    static ::ROOT::TGenericClassInfo *_R__UNIQUE_(Init) = GenerateInitInstanceLocal((const ::RooHORNSdini*)0x0); R__UseDummy(_R__UNIQUE_(Init));
+} // end of namespace ROOT
+
+namespace ROOT {
+   static void delete_RooLITTLEHORNSdini(void *p);
+   static void deleteArray_RooLITTLEHORNSdini(void *p);
+   static void destruct_RooLITTLEHORNSdini(void *p);
+   static void streamer_RooLITTLEHORNSdini(TBuffer &buf, void *obj);
+
+   // Function generating the singleton type initializer
+   static TGenericClassInfo *GenerateInitInstanceLocal(const ::RooLITTLEHORNSdini*)
+   {
+      ::RooLITTLEHORNSdini *ptr = 0;
+      static ::TVirtualIsAProxy* isa_proxy = new ::TInstrumentedIsAProxy< ::RooLITTLEHORNSdini >(0);
+      static ::ROOT::TGenericClassInfo 
+         instance("RooLITTLEHORNSdini", ::RooLITTLEHORNSdini::Class_Version(), "src/RooLITTLEHORNSdini.h", 27,
+                  typeid(::RooLITTLEHORNSdini), ::ROOT::Internal::DefineBehavior(ptr, ptr),
+                  &::RooLITTLEHORNSdini::Dictionary, isa_proxy, 16,
+                  sizeof(::RooLITTLEHORNSdini) );
+      instance.SetDelete(&delete_RooLITTLEHORNSdini);
+      instance.SetDeleteArray(&deleteArray_RooLITTLEHORNSdini);
+      instance.SetDestructor(&destruct_RooLITTLEHORNSdini);
+      instance.SetStreamerFunc(&streamer_RooLITTLEHORNSdini);
+      return &instance;
+   }
+   TGenericClassInfo *GenerateInitInstance(const ::RooLITTLEHORNSdini*)
+   {
+      return GenerateInitInstanceLocal((::RooLITTLEHORNSdini*)0);
+   }
+   // Static variable to force the class initialization
+   static ::ROOT::TGenericClassInfo *_R__UNIQUE_(Init) = GenerateInitInstanceLocal((const ::RooLITTLEHORNSdini*)0x0); R__UseDummy(_R__UNIQUE_(Init));
 } // end of namespace ROOT
 
 //______________________________________________________________________________
@@ -170,6 +201,41 @@ TClass *RooHORNSdini::Dictionary()
 TClass *RooHORNSdini::Class()
 {
    if (!fgIsA.load()) { R__LOCKGUARD2(gInterpreterMutex); fgIsA = ::ROOT::GenerateInitInstanceLocal((const ::RooHORNSdini*)0x0)->GetClass(); }
+   return fgIsA;
+}
+
+//______________________________________________________________________________
+atomic_TClass_ptr RooLITTLEHORNSdini::fgIsA(0);  // static to hold class pointer
+
+//______________________________________________________________________________
+const char *RooLITTLEHORNSdini::Class_Name()
+{
+   return "RooLITTLEHORNSdini";
+}
+
+//______________________________________________________________________________
+const char *RooLITTLEHORNSdini::ImplFileName()
+{
+   return ::ROOT::GenerateInitInstanceLocal((const ::RooLITTLEHORNSdini*)0x0)->GetImplFileName();
+}
+
+//______________________________________________________________________________
+int RooLITTLEHORNSdini::ImplFileLine()
+{
+   return ::ROOT::GenerateInitInstanceLocal((const ::RooLITTLEHORNSdini*)0x0)->GetImplFileLine();
+}
+
+//______________________________________________________________________________
+TClass *RooLITTLEHORNSdini::Dictionary()
+{
+   fgIsA = ::ROOT::GenerateInitInstanceLocal((const ::RooLITTLEHORNSdini*)0x0)->GetClass();
+   return fgIsA;
+}
+
+//______________________________________________________________________________
+TClass *RooLITTLEHORNSdini::Class()
+{
+   if (!fgIsA.load()) { R__LOCKGUARD2(gInterpreterMutex); fgIsA = ::ROOT::GenerateInitInstanceLocal((const ::RooLITTLEHORNSdini*)0x0)->GetClass(); }
    return fgIsA;
 }
 
@@ -275,11 +341,65 @@ namespace ROOT {
    }
 } // end of namespace ROOT for class ::RooHORNSdini
 
+//______________________________________________________________________________
+void RooLITTLEHORNSdini::Streamer(TBuffer &R__b)
+{
+   // Stream an object of class RooLITTLEHORNSdini.
+
+   UInt_t R__s, R__c;
+   if (R__b.IsReading()) {
+      Version_t R__v = R__b.ReadVersion(&R__s, &R__c); if (R__v) { }
+      RooAbsPdf::Streamer(R__b);
+      m.Streamer(R__b);
+      a.Streamer(R__b);
+      b.Streamer(R__b);
+      csi.Streamer(R__b);
+      shift.Streamer(R__b);
+      sigma.Streamer(R__b);
+      ratio_sigma.Streamer(R__b);
+      fraction_sigma.Streamer(R__b);
+      shiftg.Streamer(R__b);
+      R__b.CheckByteCount(R__s, R__c, RooLITTLEHORNSdini::IsA());
+   } else {
+      R__c = R__b.WriteVersion(RooLITTLEHORNSdini::IsA(), kTRUE);
+      RooAbsPdf::Streamer(R__b);
+      m.Streamer(R__b);
+      a.Streamer(R__b);
+      b.Streamer(R__b);
+      csi.Streamer(R__b);
+      shift.Streamer(R__b);
+      sigma.Streamer(R__b);
+      ratio_sigma.Streamer(R__b);
+      fraction_sigma.Streamer(R__b);
+      shiftg.Streamer(R__b);
+      R__b.SetByteCount(R__c, kTRUE);
+   }
+}
+
+namespace ROOT {
+   // Wrapper around operator delete
+   static void delete_RooLITTLEHORNSdini(void *p) {
+      delete ((::RooLITTLEHORNSdini*)p);
+   }
+   static void deleteArray_RooLITTLEHORNSdini(void *p) {
+      delete [] ((::RooLITTLEHORNSdini*)p);
+   }
+   static void destruct_RooLITTLEHORNSdini(void *p) {
+      typedef ::RooLITTLEHORNSdini current_t;
+      ((current_t*)p)->~current_t();
+   }
+   // Wrapper around a custom streamer member function.
+   static void streamer_RooLITTLEHORNSdini(TBuffer &buf, void *obj) {
+      ((::RooLITTLEHORNSdini*)obj)->::RooLITTLEHORNSdini::Streamer(buf);
+   }
+} // end of namespace ROOT for class ::RooLITTLEHORNSdini
+
 namespace {
   void TriggerDictionaryInitialization_EventDict_Impl() {
     static const char* headers[] = {
 "src/RooHILLdini.C",
 "src/RooHORNSdini.C",
+"src/RooLITTLEHORNSdini.C",
 0
     };
     static const char* includePaths[] = {
@@ -295,6 +415,7 @@ namespace {
 extern int __Cling_Autoloading_Map;
 class __attribute__((annotate(R"ATTRDUMP(RooHILLdini function PDF)ATTRDUMP"))) __attribute__((annotate("$clingAutoload$src/RooHILLdini.C")))  RooHILLdini;
 class __attribute__((annotate(R"ATTRDUMP(RooHORNSdini function PDF)ATTRDUMP"))) __attribute__((annotate("$clingAutoload$src/RooHORNSdini.C")))  RooHORNSdini;
+class __attribute__((annotate(R"ATTRDUMP(RooLITTLEHORNSdini function PDF)ATTRDUMP"))) __attribute__((annotate("$clingAutoload$src/RooLITTLEHORNSdini.C")))  RooLITTLEHORNSdini;
 )DICTFWDDCLS";
     static const char* payloadCode = R"DICTPAYLOAD(
 #line 1 "EventDict dictionary payload"
@@ -306,12 +427,14 @@ class __attribute__((annotate(R"ATTRDUMP(RooHORNSdini function PDF)ATTRDUMP"))) 
 #define _BACKWARD_BACKWARD_WARNING_H
 #include "src/RooHILLdini.C"
 #include "src/RooHORNSdini.C"
+#include "src/RooLITTLEHORNSdini.C"
 
 #undef  _BACKWARD_BACKWARD_WARNING_H
 )DICTPAYLOAD";
     static const char* classesHeaders[]={
 "RooHILLdini", payloadCode, "@",
 "RooHORNSdini", payloadCode, "@",
+"RooLITTLEHORNSdini", payloadCode, "@",
 nullptr};
 
     static bool isInitialized = false;

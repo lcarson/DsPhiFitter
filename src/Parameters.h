@@ -44,7 +44,11 @@ class Parameters : public Base {
   bool batch;
   bool debug;
   bool splitHel;
+  bool splitYears;
   bool manyFits;
+  bool runEff;
+  int  seed;
+  bool useSeed;
   //bool vary;
   bool binned;
   std::string MVAMethod; 

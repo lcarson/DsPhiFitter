@@ -2,10 +2,16 @@ SetupProject ROOT
 make -f scripts/Makefile
 
 ############## ALL MODES; ALL YEARS; BOTH SIGNAL AND NORM; (-Z == In Debug mode) #######
-bin/run -m Ds2PhiPi:Ds2KKPi:Ds2PiPiPi:Ds2KPiPi -L data/Both -d s21:s21r1:s24 -S -M -c DsD0:DsPhi -Z | tee output/allDModes_AllBmodes_AllYears.txt
+bin/run -m Ds2PhiPi:Ds2KKPi:Ds2PiPiPi:Ds2KPiPi -L data/FullSel -d s21:s21r1:s24:s26 -S -M -c DsD0:DsPhi:DsPhiSide -Z | tee output/allDModes_AllBmodes_AllYears.txt
 
 ############## Run BDT optimisation ####################################################
 bin/run -m Ds2KKPi -L data/Full -d s21:s21r1:s24 -S -M -c DsD0 -Z -C MC:BDT:4 | tee output/ManyFits_Ds2KKPi_DsD0_AllYears.txt
+
+############## Order toys ##############################################################  
+bin/run -m Ds2PhiPi:Ds2KKPi:Ds2PiPiPi:Ds2KPiPi -d s21:s21r1:s24 -S -M -c DsD0:DsPhi:DsPhiSide -Z -t 10 -T toysDir/ | tee output/toys_allDModes_AllBmodes_AllYears.txt
+
+############## Plot toys ##############################################################
+bin/run -m Ds2PhiPi:Ds2KKPi:Ds2PiPiPi:Ds2KPiPi -d s21:s21r1:s24 -S -M -c DsD0:DsPhi:DsPhiSide -Z -t -T toysDir/ | tee output/toys_plot_allDModes_AllBmodes_AllYears.txt
 
 ############## Batch submit script for Oxford batch system: ############################
 qsub batch_submit.sh 

@@ -38,7 +38,11 @@ Parameters::Parameters(  )
   , batch(false)
   , debug(false)
   , splitHel(false)
+  , splitYears(false)
   , manyFits(false)
+  , runEff(false)
+  , seed(-999)
+  , useSeed(false)
   //, vary(false)
   , binned(false)
   , quickVersion(false)
@@ -76,10 +80,12 @@ void Parameters::help()
   std::cout << "             At these locations, program looks for:  " << std::endl;
   std::cout << "             d2kpi.root, d2pik.root, etc." << std::endl;
   std::cout << "    -T <dir> location of toy directory." << std::endl;
+  std::cout << "    -s <N> set random number seed" << std::endl;
   //std::cout << "    -A <dir> location for fit results in automatic mode" << std::endl;
   //std::cout << "    -V <dir> location for fit results in systematics mode" << std::endl;
   std::cout << "Switches:  " << std::endl;
   std::cout << "    -S sum over charges" << std::endl;
+  std::cout << "    -Y Fit years separately" << std::endl;
   std::cout << "    -B binned fit performed" << std::endl;
   std::cout << "    -0 fit is not performed but pdfs drawn" << std::endl;
   std::cout << "    -N fit not performed, pdfs not drawn" << std::endl;
@@ -89,6 +95,7 @@ void Parameters::help()
   std::cout << "    -Q quicker version -- if possible, does not read ntuples" << std::endl;
   std::cout << "      (though non-quick version needed first to make ntuples)" <<std::endl;
   std::cout << "    -H Split data into helicty bins" << std::endl;
+  std::cout << "    -E Run Phi/Ds BDT efficiency fits (i.e. phi mass or Ds mass)" << std::endl;
 
   std::cout << "********************************************************************" << std::endl;
   std::cout << "Typical executions are:" << std::endl;
@@ -143,6 +150,12 @@ int Parameters::readCommandLine(unsigned int narg, char *argv[])
         break;
       case int('H'):
         splitHel=true;
+        break;
+      case int('E'):
+        runEff=true;
+        break;
+      case int('Y'):
+        splitYears=true;
         break;
       //case int('C'):
       //  manyFits=true;
@@ -203,6 +216,11 @@ int Parameters::readCommandLine(unsigned int narg, char *argv[])
         if(i==narg){OK=false;break;}if(int(argv[i][0])==int('-')){OK=false;break;}i++;//always needed if option takes an argument
         nPhiBDTBins=atoi(argv[i-1]);
         break;
+      case int('s'):
+        if(i==narg){OK=false;break;}if(int(argv[i][0])==int('-')){OK=false;break;}i++;//always needed if option takes an argument
+        useSeed=true;
+        seed=atoi(argv[i-1]);
+        break;
       case int('C'):
         if(i==narg){OK=false;break;}if(int(argv[i][0])==int('-')){OK=false;break;}i++;//always needed if option takes an argument
         manyFits=true;
@@ -242,7 +260,7 @@ int Parameters::readCommandLine(unsigned int narg, char *argv[])
     CommonTools::split(coption, tokens, ":");
     for(unsigned int i=0;i<tokens.size();i++){
       Bmodes[tokens[i]]=true;
-      if(tokens[i]!=DsD0 && tokens[i]!=DsPhi){
+      if(tokens[i]!=DsD0 && tokens[i]!=DsPhi && tokens[i]!=DsPhiSide){
         std::cout << " Don't recognise mode: " << tokens[i] << std::endl;
         OK=false;
       }
@@ -250,36 +268,37 @@ int Parameters::readCommandLine(unsigned int narg, char *argv[])
   }
   
   tokens.clear();
-  if(BDToption==null){
-    std::cout << " Specify BDT optimisation type and method: with -c <type>,<method>,<N points>  e.g  -c MC:BDT:10 or -c DATA:BDTG:5" << std::endl;
-    OK=false;
-  }else{
-    CommonTools::split(BDToption, tokens, ":");
-    int count_type=0;
-    int count_method=0;
-    int count_points=0;
-    for(unsigned int i=0;i<tokens.size();i++){
-      if (tokens[i]==MC || tokens[i] == DATA) {
-        MVAType=tokens[i];
-        count_type++;
-      } else if (tokens[i]==BDT || tokens[i]==BDTG || tokens[i]==BDTB ){
-        MVAMethod=tokens[i];
-        count_method++;
-      } else if(atoi(tokens[i].c_str())>0 && atoi(tokens[i].c_str())<999){
-        nBDTPoints = atoi(tokens[i].c_str());
-        count_points++;
-      }else{
-        std::cout << " Don't recognise type/method: " << tokens[i] << std::endl;
-        OK=false;
+  if (manyFits){
+    if(BDToption==null){
+      std::cout << " Specify BDT optimisation type and method: with -c <type>,<method>,<N points>  e.g  -c MC:BDT:10 or -c DATA:BDTG:5" << std::endl;
+      OK=false;
+    }else{
+      CommonTools::split(BDToption, tokens, ":");
+      int count_type=0;
+      int count_method=0;
+      int count_points=0;
+      for(unsigned int i=0;i<tokens.size();i++){
+        if (tokens[i]==MC || tokens[i] == DATA) {
+          MVAType=tokens[i];
+          count_type++;
+        } else if (tokens[i]==BDT || tokens[i]==BDTG || tokens[i]==BDTB ){
+          MVAMethod=tokens[i];
+          count_method++;
+        } else if(atoi(tokens[i].c_str())>0 && atoi(tokens[i].c_str())<999){
+          nBDTPoints = atoi(tokens[i].c_str());
+          count_points++;
+        }else{
+          std::cout << " Don't recognise type/method: " << tokens[i] << std::endl;
+          OK=false;
+        }
       }
-    }
 
-    if( count_type!=1 || count_method!=1 || count_points!=1) {
-        std::cout << " Incorrect number of options provided, only use one of each e.g. MC:BDT:5" <<std::endl;
-        OK = false;
-      }
+      if( count_type!=1 || count_method!=1 || count_points!=1) {
+          std::cout << " Incorrect number of options provided, only use one of each e.g. MC:BDT:5" <<std::endl;
+          OK = false;
+        }
+    }
   }
-  
   
 	if(locationoption==null){
 		if(!genToys&&!readToys&&!quickVersion){
@@ -367,8 +386,8 @@ int Parameters::readCommandLine(unsigned int narg, char *argv[])
     CommonTools::split(doption, tokens, ":");
     for(unsigned int i=0;i<tokens.size();i++){
       dsetsReq[tokens[i]]=true;
-      if(tokens[i]!=s21 && tokens[i]!=s21r1 && tokens[i]!=s24){
-        std::cout << " Don't recognise dataset '" << tokens[i] << "'. Expect s21:s21r1:s24" << std::endl;
+      if(tokens[i]!=s21 && tokens[i]!=s21r1 && tokens[i]!=s24 && tokens[i]!=s26){
+        std::cout << " Don't recognise dataset '" << tokens[i] << "'. Expect s21:s21r1:s24:s26" << std::endl;
         OK=false;
       }
       std::map<std::string,bool> tmp;

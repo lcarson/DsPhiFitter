@@ -30,12 +30,14 @@ public:
     std::string s21;
     std::string s21r1;
     std::string s24;
+    std::string s26;
     std::string Ds2PhiPi;
     std::string Ds2KKPi;
     std::string Ds2PiPiPi;
     std::string Ds2KPiPi;
     std::string DsD0;
     std::string DsPhi;
+    std::string DsPhiSide;
     std::string Helbin1;
     std::string Helbin2;
     std::string DsBDTbin1;
@@ -44,6 +46,7 @@ public:
     std::string PhiBDTbin2;
     std::string signal;
     std::string Ds;
+    std::string D0;
     std::string Phi;
     std::string BDT;
     std::string BDTG;

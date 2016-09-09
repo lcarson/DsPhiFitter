@@ -14,12 +14,14 @@ Base::Base()
   , s21("s21")
 	, s21r1("s21r1")
   , s24("s24")
+  , s26("s26")
   , Ds2PhiPi("Ds2PhiPi")
   , Ds2KKPi("Ds2KKPi")
 	, Ds2PiPiPi("Ds2PiPiPi")
   , Ds2KPiPi("Ds2KPiPi")
   , DsD0("DsD0")
   , DsPhi("DsPhi")
+  , DsPhiSide("DsPhiSide")
   , Helbin1("Helbin1")
   , Helbin2("Helbin2")
   , DsBDTbin1("DsBDTbin1")
@@ -28,6 +30,7 @@ Base::Base()
   , PhiBDTbin2("PhiBDTbin2")
 	, signal("signal")
   , Ds("Ds")
+  , D0("D0")
   , Phi("Phi")
   , BDT("BDT")
   , BDTG("BDTG")
@@ -83,15 +86,16 @@ Base::Base()
   allmodeList.push_back(Ds2KPiPi);
   allBmodeList.push_back(DsD0);
   allBmodeList.push_back(DsPhi);
+  allBmodeList.push_back(DsPhiSide);
   allchargeList.push_back(both);
   allchargeList.push_back(minus);
   allchargeList.push_back(plus);
   allmagnetList.push_back(up);
   allmagnetList.push_back(dn);
   allmagnetList.push_back(both);
+  allHelbinList.push_back(both);
   allHelbinList.push_back(Helbin1);
   allHelbinList.push_back(Helbin2);
-  allHelbinList.push_back(both);
   allDsBDTbinList.push_back(DsBDTbin1);
   allDsBDTbinList.push_back(DsBDTbin2);
   allPhiBDTbinList.push_back(PhiBDTbin1);
