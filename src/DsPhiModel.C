@@ -1188,6 +1188,14 @@ void DsPhiModel::DefineModel()
   
   // Single Branching fraction
   //Branching_fraction_all = new RooRealVar("Branching_fraction",       "",  eff_ratio_rrv[Ds2KKPi]->getVal()*(Yield_CB_input[DsPhi][Ds2KKPi]/Yield_CB_input[DsD0][Ds2KKPi]) ,0.0,1.0 );
+  
+  // This factor is used to get the branching fraction in units of 10^{-7}
+
+  ///////-----------------------------------------------------------------------
+  ////   Correction factor = 10^7 * Br(B->DsD0) * ( Br(D0->KK)/Br(phi -> KK) )
+  ////                     = 10^7 * 9.0e-3      * ( 4.01e-3   / 0.489        ) 
+  ////                     = 738.0368098 
+  ///////-----------------------------------------------------------------------
   RooRealVar* Correction_factor = new RooRealVar("Correction_factor","",738.0368098);
   
   Branching_fraction_all = new RooRealVar("Branching_fraction",       "Branching Fraction (#times10^{-7})",  10.0, -100.0, 10000.0 ); //*0.01355
