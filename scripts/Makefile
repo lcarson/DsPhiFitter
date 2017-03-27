@@ -15,7 +15,7 @@ BINDIR        = ${PWD}/bin/
 SRCDIR        = ${PWD}/src/
 
 OBJS	      = $(BINDIR)Main.o $(BINDIR)Base.o $(BINDIR)CommonTools.o $(BINDIR)Parameters.o 
-OBJS			 += $(BINDIR)DsPhiFitting.o $(BINDIR)DsPhiModel.o $(BINDIR)PhiModel.o $(BINDIR)DsModel.o
+OBJS			 += $(BINDIR)DsPhiFitting.o $(BINDIR)DsPhiModel.o $(BINDIR)DKst0Fitting.o $(BINDIR)DKst0Model.o $(BINDIR)PhiModel.o $(BINDIR)DsModel.o
 
 DATAOBJS	  = $(SRCDIR)RooHILLdini.C $(SRCDIR)RooHORNSdini.C $(SRCDIR)RooLITTLEHORNSdini.C
 
@@ -31,6 +31,7 @@ $(BINDIR)EventDict.o : ${DATAOBJS}
 				@rm -f ${SRCDIR}EventDict.C ${SRCDIR}EventDict.h
 				@rootcint ${SRCDIR}EventDict.C -c ${DATAOBJS} 
 				${CC} $(CXXFLAGS) -I ${PWD} -c ${SRCDIR}EventDict.C -o $(BINDIR)EventDict.o
+				@mv ${SRCDIR}EventDict_rdict.pcm ${BINDIR}
 
 $(BINDIR)Main.o : 		$(SRCDIR)Main.C
 				@mkdir -p bin
@@ -51,6 +52,12 @@ $(BINDIR)DsPhiFitting.o : 	$(SRCDIR)DsPhiFitting.C $(SRCDIR)DsPhiFitting.h
 $(BINDIR)DsPhiModel.o :		$(SRCDIR)DsPhiModel.C $(SRCDIR)DsPhiModel.h
 				${CC} $(CXXFLAGS) -c $(SRCDIR)DsPhiModel.C -o $(BINDIR)DsPhiModel.o
 
+$(BINDIR)DKst0Fitting.o :		$(SRCDIR)DKst0Fitting.C $(SRCDIR)DKst0Fitting.h
+				${CC} $(CXXFLAGS) -c $(SRCDIR)DKst0Fitting.C -o $(BINDIR)DKst0Fitting.o
+
+$(BINDIR)DKst0Model.o :		$(SRCDIR)DKst0Model.C $(SRCDIR)DKst0Model.h
+				${CC} $(CXXFLAGS) -c $(SRCDIR)DKst0Model.C -o $(BINDIR)DKst0Model.o
+
 $(BINDIR)PhiModel.o :		$(SRCDIR)PhiModel.C $(SRCDIR)PhiModel.h
 				${CC} $(CXXFLAGS) -c $(SRCDIR)PhiModel.C -o $(BINDIR)PhiModel.o
 
@@ -69,6 +76,6 @@ $(BINDIR)RooLITTLEHORNSdini.o : $(SRCDIR)RooLITTLEHORNSdini.C $(SRCDIR)RooLITTLE
 
 #-------------------------------------------------------
 clean:
-		@rm -f $(BINDIR)test $(BINDIR)run $(SRCDIR)/*~ core* $(BINDIR)/*.o ./*~ ${SRCDIR}EventDict.C ${SRCDIR}EventDict.h
+		@rm -f $(BINDIR)test $(BINDIR)run $(SRCDIR)/*~ core* $(BINDIR)/*.o ./*~ ${SRCDIR}EventDict.C ${SRCDIR}EventDict.h $(BINDIR)*.pcm
 		@rmdir $(BINDIR)
 # DO NOT DELETE

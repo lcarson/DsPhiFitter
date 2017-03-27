@@ -2,7 +2,7 @@ SetupProject ROOT
 make -f scripts/Makefile
 
 ############## ALL MODES; ALL YEARS; BOTH SIGNAL AND NORM; (-Z == In Debug mode) #######
-bin/run -m Ds2PhiPi:Ds2KKPi:Ds2PiPiPi:Ds2KPiPi -L data/FullSel -d s21:s21r1:s24:s26 -S -M -c DsD0:DsPhi:DsPhiSide -Z | tee output/allDModes_AllBmodes_AllYears.txt
+bin/run -m Ds2PhiPi:Ds2KKPi:Ds2PiPiPi:Ds2KPiPi -L data/FullSel -d s21:s21r1:s24:s26 -S -M -c DsD0:DsPhi:DsPhiSide -Z -Q -H -R | tee output/allDModes_AllBmodes_AllYears.txt
 
 ############## Run BDT optimisation ####################################################
 bin/run -m Ds2KKPi -L data/Full -d s21:s21r1:s24 -S -M -c DsD0 -Z -C MC:BDT:4 | tee output/ManyFits_Ds2KKPi_DsD0_AllYears.txt
@@ -12,6 +12,12 @@ bin/run -m Ds2PhiPi:Ds2KKPi:Ds2PiPiPi:Ds2KPiPi -d s21:s21r1:s24 -S -M -c DsD0:Ds
 
 ############## Plot toys ##############################################################
 bin/run -m Ds2PhiPi:Ds2KKPi:Ds2PiPiPi:Ds2KPiPi -d s21:s21r1:s24 -S -M -c DsD0:DsPhi:DsPhiSide -Z -t -T toysDir/ | tee output/toys_plot_allDModes_AllBmodes_AllYears.txt
+
+############## Order systematics on data ##############################################################  
+bin/run -m Ds2PhiPi:Ds2KKPi:Ds2PiPiPi:Ds2KPiPi -L data/FullSel -d s21:s21r1:s24:s26 -S -M -c DsD0:DsPhi:DsPhiSide -Z -Q -H -v fixedSig_n:fixedSig_alpha -V systematicsDir/ | tee output/sys_allDModes_AllBmodes_AllYears.txt
+
+############## Order systematics on toy ##############################################################  
+bin/run -m Ds2PhiPi:Ds2KKPi:Ds2PiPiPi:Ds2KPiPi -d s21:s21r1:s24:s26 -S -M -c DsD0:DsPhi:DsPhiSide -Z -v fixedSig_n:fixedSig_alpha -V systematicsDir/ | tee output/sys_allDModes_AllBmodes_AllYears.txt
 
 ############## Batch submit script for Oxford batch system: ############################
 qsub batch_submit.sh 
@@ -25,3 +31,9 @@ qsub batch_submit.sh
 #       -Q      Use saved RooDataSets (quicker)        
 #
 ########################################################################################
+
+
+#### DK*0 fitter:
+
+bin/run -m D2PiKPi -L data/FullSelDKst0 -d s21:s21r1:s24:s26 -S -M -c DD0:DKst0:DKst0Side -Z -Q -H | tee output/DKst0_allDModes_AllBmodes_AllYears.txt
+

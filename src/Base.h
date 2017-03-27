@@ -35,8 +35,14 @@ public:
     std::string Ds2KKPi;
     std::string Ds2PiPiPi;
     std::string Ds2KPiPi;
+    std::string D2KKPi;
+    std::string D2PiPiPi;
+    std::string D2PiKPi;
     std::string DsD0;
     std::string DsPhi;
+    std::string DD0;
+    std::string DKst0;
+    std::string DKst0Side;
     std::string DsPhiSide;
     std::string Helbin1;
     std::string Helbin2;
@@ -46,8 +52,10 @@ public:
     std::string PhiBDTbin2;
     std::string signal;
     std::string Ds;
+    std::string D;
     std::string D0;
     std::string Phi;
+    std::string Kst0;
     std::string BDT;
     std::string BDTG;
     std::string BDTB;
@@ -56,6 +64,7 @@ public:
     std::string cont;
     std::string surf;
     std::string norm;
+    std::string mergedDModes;
     //std::string buffer;
     //std::string sidebd;
     std::string bckgrd;
@@ -89,6 +98,34 @@ public:
     std::vector<std::string> allHelbinList;
     std::vector<std::string> allDsBDTbinList;
     std::vector<std::string> allPhiBDTbinList;
+
+    std::string fixedSig_n;
+    std::string fixedSig_alpha;
+    std::string fixedSig_Sigmaratio;
+    std::string fixedSig_Sigmafrac;
+    std::string fixedSig_NormSigma;
+    std::string fixedSig_BinRatios;
+    std::string fixedBG_DsD0;
+    std::string fixedBG_DsPhi;
+    std::string fixedBG_Dsa1;
+    std::string fixedBG_hel;
+    std::string fixedBG_noDsstPhi;
+    std::string fixedBG_noDsa1;
+    std::string fixedBG_slope;
+    std::string fixedBG_Dsa1_smear;
+    std::string fixedBG_DsstKKst_smear;
+    std::string fixedBG_DD_Ratios;
+    std::string fixedBG_DD_Fractions;
+    std::string fixedBG_DsstDst0_endpoints;
+    std::string fixedBG_DsstDst0_shape;
+    std::string fixedBG_Comb_shape;
+    std::string fixedBG_Comb_shape_flat;
+    std::string fixedBG_Comb_shape_line;
+    std::string draw;
+    std::string fixedSig_double;
+    std::string fixedBG_DD0;
+    std::string fixedBG_DKst0;
+    std::string doNothing;
 };
 
 

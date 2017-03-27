@@ -16,7 +16,7 @@
 #include "RooUnblindPrecision.h"
 #include "RooUnblindUniform.h"
 #include "RooUnblindOffset.h"
-
+#include "RooFitResult.h"
 #include "Base.h"
 #include "Parameters.h"
 //#include "MisIDShapes.h"
@@ -27,7 +27,7 @@ class RooGaussian;
 
 class DsPhiModel : public Base {
 public :
-  DsPhiModel(Parameters*,RooRealVar*,bool);
+  DsPhiModel(Parameters*,RooRealVar*,bool,bool,bool);
   ~DsPhiModel(){}
 	void DefineRooCategories();
 	void DefineModel();
@@ -37,6 +37,9 @@ public :
   std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,double> > > > > > > > > GetResult();
   RooArgSet* GetParameters();
   const RooArgSet& Constraints();
+  void SetBrConstant(){Branching_fraction_all->setConstant(kTRUE);  Branching_fraction_all->setVal(0.0);  }
+  void SetBrFloating(){Branching_fraction_all->setConstant(kFALSE); Branching_fraction_all->setVal(par->sensitivityBR); Branching_fraction_all->setRange(-100.0, 10000.0);}
+  void SetBrToConstVal(double val){Branching_fraction_all->setConstant(kTRUE); Branching_fraction_all->setVal(val);}
 
 private:
   TRandom3 *rand;
@@ -56,6 +59,8 @@ private:
   RooCategory PhiBDTBin;
   std::string blindString;
   bool needsBlinding;
+  bool varyAllowed;
+  bool genModel;
 	
   std::vector<std::string> typeList;
   std::vector<std::string> modeList; 
@@ -111,7 +116,8 @@ private:
   std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooAbsReal*> > > > > > > >     yield_CB2;
   std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooAbsReal*> > > > > > > >     yield_Dsa1;
   std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooAbsReal*> > > > > > > >     yield_DsstKKst;
-  std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooRealVar*> > > > > > > >     yield_comb; 
+  std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooAbsReal*> > > > > > > >     yield_DsD;
+  std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooAbsReal*> > > > > > > >     yield_comb; 
   std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooAbsReal*> > > > > > > >     yield_dsstd0;
   std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooAbsReal*> > > > > > > >     yield_dsdst0;
   std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooFormulaVar*> > > > > > > >  yield_HORNS;
@@ -123,6 +129,9 @@ private:
   std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooAbsReal*> > > > > > > >  Signal_total;
   std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooAbsReal*> > > > > > > >  Low_Mass_total;
   std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooAbsReal*> > > > > > > >  PR_total_yield;
+  std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooAbsReal*> > > > > > > >  yield_DsstarDstar0;
+  std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooAbsReal*> > > > > > > >  yield_dsstKK;
+  std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooAbsReal*> > > > > > > >  yield_DD;
   std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooAbsReal*> > > > > > > >  frac;
   std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooAbsReal*> > > > > > > >  frac_HORNS;
   std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooAbsReal*> > > > > > > >  frac_HILL;
@@ -140,7 +149,14 @@ private:
   std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooRealVar*> > > > > > ncb;
   std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooRealVar*> > > > > > alpha;
   std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooRealVar*> > > > > > sig_ratio;
-  
+ 
+
+  std::map<std::string,std::map<std::string,RooAbsReal*> > sigma_simple;
+  std::map<std::string,std::map<std::string,RooAbsReal*> > sigma2_simple;
+  std::map<std::string,std::map<std::string,RooAbsReal*> > avg_sigma_simple; 
+  std::map<std::string,std::map<std::string,RooAbsReal*> > sig_frac_simple;
+
+
   //Combinatoric
   std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooRealVar*> > > > > >  comb_slope;
 
@@ -187,6 +203,24 @@ private:
   std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooAbsReal*> > > > > > HORNS2_R;       
   std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooAbsReal*> > > > > > HORNS2_f; 
 
+
+  std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooAbsReal*> > > > > > HORNS_DsstKK_a;       
+  std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooAbsReal*> > > > > > HORNS_DsstKK_b;      
+  std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooAbsReal*> > > > > > HORNS_DsstKK_csi;    
+  std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooAbsReal*> > > > > > HORNS_DsstKK_shift;   
+  std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooAbsReal*> > > > > > HORNS_DsstKK_sigma; 
+  std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooAbsReal*> > > > > > HORNS_DsstKK_R;       
+  std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooAbsReal*> > > > > > HORNS_DsstKK_f; 
+
+  std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooAbsReal*> > > > > > HILL_3_a;       
+  std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooAbsReal*> > > > > > HILL_3_b;      
+  std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooAbsReal*> > > > > > HILL_3_csi;    
+  std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooAbsReal*> > > > > > HILL_3_shift;   
+  std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooAbsReal*> > > > > > HILL_3_sigma; 
+  std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooAbsReal*> > > > > > HILL_3_R;       
+  std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooAbsReal*> > > > > > HILL_3_f; 
+
+
   //std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooUnblindPrecision*> > > > B_yield;
   //std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooUnblindOffset*> > > > B_yield;
   std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooAbsReal*> > > > > > > > B_yield;
@@ -195,6 +229,23 @@ private:
 
 
   std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,double> > > > > > > > > fit_results;
+
+  std::map<std::string,RooAbsReal*>Branching_fraction;
+  RooRealVar* Branching_fraction_all;
+  
+  std::map<std::string,RooAbsReal*> Asymmetry;
+  RooAbsReal* Asymmetry_all;  
+  
+  std::map<std::string,RooAbsReal*> Asymmetry_unblinded;
+  RooAbsReal* Asymmetry_all_unblinded;
+  
+  std::map<std::string,double> eff_ratio;
+  std::map<std::string,double> eff_ratio_err; 
+  std::map<std::string,RooRealVar*> eff_ratio_rrv;
+
+  // Convolvd things 
+
+
 
 };
 
