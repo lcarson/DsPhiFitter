@@ -6,8 +6,8 @@ def makeSubmitScript(sysDir, seed, variableList, wall, brstring, inputMode,other
     dirname=sysDir
     os.chdir(dirname)
     os.system("echo '#!/bin/bash' >> BatchSubmit_"+seed+".sh");
-    os.system("echo '#PBS -l cput="+wall+":00:00' >> BatchSubmit_"+seed+".sh");
-    os.system("echo '#PBS -l walltime="+wall+":00:00' >> BatchSubmit_"+seed+".sh");
+    os.system("echo '#PBS -l cput="+wall+":59:00' >> BatchSubmit_"+seed+".sh");
+    os.system("echo '#PBS -l walltime="+wall+":59:00' >> BatchSubmit_"+seed+".sh");
     os.system("echo 'source /data/lhcb/sw/scripts/lbsetup-cvmfs.sh' >> BatchSubmit_"+seed+".sh");
     os.system("echo '. SetupProject.sh Gaudi ROOT' >> BatchSubmit_"+seed+".sh");
 
@@ -24,8 +24,8 @@ def makePlotScript(sysDir, wall, brstring,others):
     dirname=sysDir
     os.chdir(dirname)
     os.system("echo '#!/bin/bash' >> MakePlots.sh");
-    os.system("echo '#PBS -l cput="+wall+":00:00' >> MakePlots.sh");
-    os.system("echo '#PBS -l walltime="+wall+":00:00' >> MakePlots.sh");
+    os.system("echo '#PBS -l cput="+wall+":59:00' >> MakePlots.sh");
+    os.system("echo '#PBS -l walltime="+wall+":59:00' >> MakePlots.sh");
     os.system("echo 'source /data/lhcb/sw/scripts/lbsetup-cvmfs.sh' >> MakePlots.sh");
     os.system("echo '. SetupProject.sh Gaudi ROOT' >> MakePlots.sh");
 
@@ -38,7 +38,7 @@ def makePlotScript(sysDir, wall, brstring,others):
     os.chdir(initDir)
 
 basedir = "/data/lhcb/users/hadavizadeh/B2DsPhi/Systematics"
-
+#basedir = '/home/hadavizadeh/batch_test'
 
 inputMode     = str(raw_input("DsPhi or DKst0? "))
 if inputMode!='DsPhi' and inputMode!= 'DKst0':
@@ -111,11 +111,15 @@ print '    fixedBG_Dsa1_smear'
 print '    fixedBG_DsstKKst_smear'
 print '    fixedBG_DD_Ratios'
 print '    fixedBG_DD_Fractions'
+print '    fixedBG_DsstDst0_endpoints'
+
 print '    fixedBG_Comb_shape_flat'
 print '    fixedBG_Comb_shape_line'
+print 
+print '    fixedBG_DsKK_fractions'
 print
 print '    All Background:'
-print '          fixedBG_DsD0:fixedBG_DsPhi:fixedBG_Dsa1:fixedBG_hel:fixedBG_Dsa1_smear:fixedBG_DsstKKst_smear:fixedBG_slope:fixedBG_DD_Ratios:fixedBG_DD_Fractions'
+print '          fixedBG_DsD0:fixedBG_DsPhi:fixedBG_Dsa1:fixedBG_hel:fixedBG_Dsa1_smear:fixedBG_DsstKKst_smear:fixedBG_DD_Ratios:fixedBG_DD_Fractions:fixedBG_DsstDst0_endpoints'
 print
 print '========= With out some backgrounds ==========='
 print '    fixedBG_noDsstPhi'
@@ -147,7 +151,10 @@ if changeextra.lower() == 'y':
         extraSettings = extraSettings + ' -0 '
     binned = str(raw_input("Binned fit? type y to change, anything else to leave... "))
     if binned.lower() == 'y':
-        extraSettings = extraSettings + ' -B '
+        extraSettings = extraSettings + ' -B '    
+    limits = str(raw_input("Set Limits? type y to change, anything else to leave... "))
+    if limits.lower() == 'y':
+        extraSettings = extraSettings + ' -I '
 
 print "Using extra settings: " + extraSettings
 print 
@@ -164,6 +171,7 @@ os.system('mkdir '+sysDir+'/Bu2DsPhi_Fitter_copy/batch')
 os.system('mkdir '+sysDir+'/Bu2DsPhi_Fitter_copy/roodatasets')
 os.system('mkdir '+sysDir+'/Bu2DsPhi_Fitter_copy/data')
 os.system('mkdir '+sysDir+'/Bu2DsPhi_Fitter_copy/results')
+os.system('mkdir '+sysDir+'/Bu2DsPhi_Fitter_copy/results/limits')
 os.system('mkdir '+sysDir+'/Bu2DsPhi_Fitter_copy/data/FullSel')
 os.system("cp -r /home/hadavizadeh/Bc_Analysis/DataStripping/B_PhiD/Git_Fit/Test/DsPhiFitter/roodatasets/*.root "+sysDir+"/Bu2DsPhi_Fitter_copy/roodatasets")
 os.system("cp -r /home/hadavizadeh/Bc_Analysis/DataStripping/B_PhiD/Git_Fit/Test/DsPhiFitter/src/* "+sysDir+"/Bu2DsPhi_Fitter_copy/src")

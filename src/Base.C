@@ -28,6 +28,7 @@ Base::Base()
   , DKst0("DKst0")
   , DKst0Side("DKst0Side")
   , DsPhiSide("DsPhiSide")
+  , DsPhiSideWide("DsPhiSideWide")
   , Helbin1("Helbin1")
   , Helbin2("Helbin2")
   , DsBDTbin1("DsBDTbin1")
@@ -48,6 +49,7 @@ Base::Base()
   , cont("cont")
   , surf("surf")
   , norm("norm")
+  , merged("merged")
   , mergedDModes("mergedDModes")
 	  //, buffer("buffer")
 	  //, sidebd("sidebd")
@@ -102,6 +104,7 @@ Base::Base()
   ,fixedBG_Comb_shape("fixedBG_Comb_shape")
   ,fixedBG_Comb_shape_flat("fixedBG_Comb_shape_flat")
   ,fixedBG_Comb_shape_line("fixedBG_Comb_shape_line")
+  ,fixedBG_DsKK_fractions("fixedBG_DsKK_fractions")
   ,draw("draw")
   ,fixedSig_double("fixedSig_double")   
   ,fixedBG_DD0("fixedBG_DD0")
@@ -124,6 +127,7 @@ Base::Base()
   allBmodeList.push_back(DsD0);
   allBmodeList.push_back(DsPhi);
   allBmodeList.push_back(DsPhiSide);
+  allBmodeList.push_back(DsPhiSideWide);
   allchargeList.push_back(both);
   allchargeList.push_back(minus);
   allchargeList.push_back(plus);

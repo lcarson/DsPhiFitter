@@ -102,6 +102,7 @@ void DsPhiModel::DefineRooCategories() //like D0h with "PIDcut" removed
   if(par->Bmodes[DsD0])        BmodeList.push_back(DsD0);
   if(par->Bmodes[DsPhi])       BmodeList.push_back(DsPhi);
   if(par->Bmodes[DsPhiSide])   BmodeList.push_back(DsPhiSide);
+  if(par->Bmodes[DsPhiSideWide])   BmodeList.push_back(DsPhiSideWide);
  
 
   for(std::vector<std::string>::iterator m=modeList.begin();m!=modeList.end();m++){       
@@ -220,7 +221,7 @@ void DsPhiModel::DefineModel()
   // ======================================================== 
   
   // Make fit run super quick --> for testing
-  bool allConst_exYield =true;
+  bool allConst_exYield = false;
   
   // Fix yields to zero --> to calculate sigma wilks 
   
@@ -261,7 +262,7 @@ void DsPhiModel::DefineModel()
   if(!PartRecoPDF_Bs02Dsa1) std::cout<<"Running: DsPhiModel::DefineModel() --> Can't find Dsa1 pdf"<<std::endl; 
   f1.Close();
   
-  RooRealVar* global_shift      = new RooRealVar("global_shift",      "Global shift",      -1.81, -10.0,    10.0);
+  RooRealVar* global_shift      = new RooRealVar("global_shift",      "Global shift",      -1.98587416, -10.0,    10.0);
   RooRealVar* global_shift_test = new RooRealVar("global_shift_test", "Global shift test", -3.01, -100.0,    100.0);
 
   RooRealVar* sg_test      = new RooRealVar("sg_test",   "sg_test",    1  ) ;
@@ -298,10 +299,13 @@ void DsPhiModel::DefineModel()
   PartRecoPDF_Bs02Dsa1_Conv_split[DsPhi][Helbin2]     = new RooFFTConvPdf("kest1_Dasa1_conv_DsPhi_Helbin2",      "kest1_Dsa1_conv",  *mB,*PartRecoPDF_Bs02Dsa1_in_H2, *gauss_test  );
   PartRecoPDF_Bs02Dsa1_Conv_split[DsPhiSide][Helbin1] = new RooFFTConvPdf("kest1_Dasa1_conv_DsPhiSide_Helbin1",  "kest1_Dsa1_conv",  *mB,*PartRecoPDF_Bs02Dsa1_out_H1, *gauss_test  );
   PartRecoPDF_Bs02Dsa1_Conv_split[DsPhiSide][Helbin2] = new RooFFTConvPdf("kest1_Dasa1_conv_DsPhiSide_Helbin2",  "kest1_Dsa1_conv",  *mB,*PartRecoPDF_Bs02Dsa1_out_H2, *gauss_test  );
+  
+  PartRecoPDF_Bs02Dsa1_Conv_split[DsPhiSideWide][Helbin1] = PartRecoPDF_Bs02Dsa1_Conv_split[DsPhiSide][Helbin1];
+  PartRecoPDF_Bs02Dsa1_Conv_split[DsPhiSideWide][Helbin2] = PartRecoPDF_Bs02Dsa1_Conv_split[DsPhiSide][Helbin2];
 
   PartRecoPDF_Bs02Dsa1_Conv_split[DsPhi][both]     = new RooFFTConvPdf("kest1_Dasa1_conv_DsPhi_both",      "kest1_Dsa1_conv",  *mB,*PartRecoPDF_Bs02Dsa1, *gauss_test  );
   PartRecoPDF_Bs02Dsa1_Conv_split[DsPhiSide][both] = new RooFFTConvPdf("kest1_Dasa1_conv_DsPhiSide_both",  "kest1_Dsa1_conv",  *mB,*PartRecoPDF_Bs02Dsa1, *gauss_test  );
-
+  PartRecoPDF_Bs02Dsa1_Conv_split[DsPhiSideWide][both] =  PartRecoPDF_Bs02Dsa1_Conv_split[DsPhiSide][both];
 
 
 
@@ -318,7 +322,7 @@ void DsPhiModel::DefineModel()
   //RooKeysPdf* PartRecoPDF_Bs02DsDs  = (RooKeysPdf*)workspace3->pdf("kest1");
   //f3.Close();
 
-  RooRealVar* frac_Dsa1_DsstKKst = new RooRealVar("frac_Dsa1_DsstKKst","frac_Dsa1_DsstKKst", 0.774, 0.0, 1.0);
+  RooRealVar* frac_Dsa1_DsstKKst = new RooRealVar("frac_Dsa1_DsstKKst","frac_Dsa1_DsstKKst", 0.6999605547, 0.0, 1.0);
   if(allConst_exYield) frac_Dsa1_DsstKKst->setConstant();
 
   
@@ -400,7 +404,7 @@ void DsPhiModel::DefineModel()
   std::map<std::string,std::string> mod;
   std::map<std::string,std::string> Bmod;
   mod[Ds2PhiPi]="#phi#pi"; mod[Ds2KKPi]="KK#pi"; mod[Ds2KPiPi]="K#pi#pi";    mod[Ds2PiPiPi]="#pi#pi#pi";
-  Bmod[DsD0]="D_{s}D^{0}"; Bmod[DsPhi]="D_{s}#phi"; Bmod[DsPhiSide]="D_{s}#phi Sideband";
+  Bmod[DsD0]="D_{s}D^{0}"; Bmod[DsPhi]="D_{s}#phi"; Bmod[DsPhiSide]="D_{s}#phi Sideband";  Bmod[DsPhiSideWide]="D_{s}#phi Sideband wide";
 
   // ======================================================== 
   // =========== Values for Combinatoric ====================
@@ -416,6 +420,11 @@ void DsPhiModel::DefineModel()
   Yield_comb[DsPhiSide][Ds2KPiPi][both]  = 120;
   Yield_comb[DsPhiSide][Ds2PhiPi][both]  = 54;
   Yield_comb[DsPhiSide][Ds2PiPiPi][both] = 111;
+ 
+  Yield_comb[DsPhiSideWide][Ds2KKPi][both]   = 86;
+  Yield_comb[DsPhiSideWide][Ds2KPiPi][both]  = 120;
+  Yield_comb[DsPhiSideWide][Ds2PhiPi][both]  = 54;
+  Yield_comb[DsPhiSideWide][Ds2PiPiPi][both] = 111;
    
   Yield_comb[DsPhi][Ds2KKPi][both]   = 203;
   Yield_comb[DsPhi][Ds2KPiPi][both]  = 41;
@@ -423,35 +432,45 @@ void DsPhiModel::DefineModel()
   Yield_comb[DsPhi][Ds2PiPiPi][both] = 126;
 
 
-  Yield_comb[DsD0][Ds2KKPi][Helbin1]   = 229;
-  Yield_comb[DsD0][Ds2KKPi][Helbin2]   = 83;
-  Yield_comb[DsD0][Ds2KPiPi][Helbin1]  = 83;
-  Yield_comb[DsD0][Ds2KPiPi][Helbin2]  = 35;
-  Yield_comb[DsD0][Ds2PhiPi][Helbin1]  = 75; 
-  Yield_comb[DsD0][Ds2PhiPi][Helbin2]  = 37; 
-  Yield_comb[DsD0][Ds2PiPiPi][Helbin1] = 129;
-  Yield_comb[DsD0][Ds2PiPiPi][Helbin2] = 116;
+  Yield_comb[DsD0][Ds2KKPi][Helbin1]   = 116.1451715;
+  Yield_comb[DsD0][Ds2KKPi][Helbin2]   =  51.07304617;
+  Yield_comb[DsD0][Ds2KPiPi][Helbin1]  =  73.5168824;
+  Yield_comb[DsD0][Ds2KPiPi][Helbin2]  =  42.12103768;
+  Yield_comb[DsD0][Ds2PhiPi][Helbin1]  =  31.99186854; 
+  Yield_comb[DsD0][Ds2PhiPi][Helbin2]  =  12.88352543; 
+  Yield_comb[DsD0][Ds2PiPiPi][Helbin1] =  41.7452395;
+  Yield_comb[DsD0][Ds2PiPiPi][Helbin2] =  36.23893004;
   
-  Yield_comb[DsPhiSide][Ds2KKPi][Helbin1]   =  56;
-  Yield_comb[DsPhiSide][Ds2KKPi][Helbin2]   =  57;
-  Yield_comb[DsPhiSide][Ds2KPiPi][Helbin1]  = 101;
-  Yield_comb[DsPhiSide][Ds2KPiPi][Helbin2]  =  58;
-  Yield_comb[DsPhiSide][Ds2PhiPi][Helbin1]  =  16; 
-  Yield_comb[DsPhiSide][Ds2PhiPi][Helbin2]  =  37;
-  Yield_comb[DsPhiSide][Ds2PiPiPi][Helbin1] =  61;
-  Yield_comb[DsPhiSide][Ds2PiPiPi][Helbin2] =  54;
+  Yield_comb[DsPhiSide][Ds2KKPi][Helbin1]   =  32.86353357;
+  Yield_comb[DsPhiSide][Ds2KKPi][Helbin2]   =  26.92273304;
+  Yield_comb[DsPhiSide][Ds2KPiPi][Helbin1]  =  18.07068366;
+  Yield_comb[DsPhiSide][Ds2KPiPi][Helbin2]  =  14.40940702;
+  Yield_comb[DsPhiSide][Ds2PhiPi][Helbin1]  =  5.047383879; 
+  Yield_comb[DsPhiSide][Ds2PhiPi][Helbin2]  =  12.49284472;
+  Yield_comb[DsPhiSide][Ds2PiPiPi][Helbin1] =  17.06073355;
+  Yield_comb[DsPhiSide][Ds2PiPiPi][Helbin2] =  15.50342468;
+  
+  Yield_comb[DsPhiSideWide][Ds2KKPi][Helbin1]   =  56;
+  Yield_comb[DsPhiSideWide][Ds2KKPi][Helbin2]   =  57;
+  Yield_comb[DsPhiSideWide][Ds2KPiPi][Helbin1]  = 101;
+  Yield_comb[DsPhiSideWide][Ds2KPiPi][Helbin2]  =  58;
+  Yield_comb[DsPhiSideWide][Ds2PhiPi][Helbin1]  =  16; 
+  Yield_comb[DsPhiSideWide][Ds2PhiPi][Helbin2]  =  37;
+  Yield_comb[DsPhiSideWide][Ds2PiPiPi][Helbin1] =  61;
+  Yield_comb[DsPhiSideWide][Ds2PiPiPi][Helbin2] =  54;
 
-  Yield_comb[DsPhi][Ds2KKPi][Helbin1]   = 100;
-  Yield_comb[DsPhi][Ds2KKPi][Helbin2]   =  76;
-  Yield_comb[DsPhi][Ds2KPiPi][Helbin1]  =  12;
-  Yield_comb[DsPhi][Ds2KPiPi][Helbin2]  =  32;
-  Yield_comb[DsPhi][Ds2PhiPi][Helbin1]  =  40;
-  Yield_comb[DsPhi][Ds2PhiPi][Helbin2]  =  62;
-  Yield_comb[DsPhi][Ds2PiPiPi][Helbin1] =  46;
-  Yield_comb[DsPhi][Ds2PiPiPi][Helbin2] =  28;
+  Yield_comb[DsPhi][Ds2KKPi][Helbin1]   = 109.8755674;
+  Yield_comb[DsPhi][Ds2KKPi][Helbin2]   =  57.16087689;
+  Yield_comb[DsPhi][Ds2KPiPi][Helbin1]  =  19.41480152;
+  Yield_comb[DsPhi][Ds2KPiPi][Helbin2]  =  18.51785339;
+  Yield_comb[DsPhi][Ds2PhiPi][Helbin1]  =  39.67440642;
+  Yield_comb[DsPhi][Ds2PhiPi][Helbin2]  =  28.60582499;
+  Yield_comb[DsPhi][Ds2PiPiPi][Helbin1] =  43.70499436;
+  Yield_comb[DsPhi][Ds2PiPiPi][Helbin2] =  27.29352129;
 
 
-  RooRealVar* global_comb_slope = new RooRealVar("global_comb_slope"  ,"Global Comb. Slope", -0.00351, -1.0, -0.0000000001);
+  RooRealVar* global_comb_slope = new RooRealVar("global_comb_slope"  ,"Global Comb. Slope", -0.003344384811, -1.0, -0.0000000001);
+  
   //if(allConst_exYield) global_comb_slope->setConstant();
   
   std::map<std::string,std::map<std::string,RooRealVar*>> comb_slope_sys;
@@ -469,6 +488,11 @@ void DsPhiModel::DefineModel()
   comb_slope_sys[DsPhiSide][Ds2KKPi]   = comb_slope_sys[DsPhi][Ds2KKPi]  ;
   comb_slope_sys[DsPhiSide][Ds2KPiPi]  = comb_slope_sys[DsPhi][Ds2KPiPi] ;
   comb_slope_sys[DsPhiSide][Ds2PiPiPi] = comb_slope_sys[DsPhi][Ds2PiPiPi];
+  
+  comb_slope_sys[DsPhiSideWide][Ds2PhiPi]  = comb_slope_sys[DsPhi][Ds2PhiPi] ;
+  comb_slope_sys[DsPhiSideWide][Ds2KKPi]   = comb_slope_sys[DsPhi][Ds2KKPi]  ;
+  comb_slope_sys[DsPhiSideWide][Ds2KPiPi]  = comb_slope_sys[DsPhi][Ds2KPiPi] ;
+  comb_slope_sys[DsPhiSideWide][Ds2PiPiPi] = comb_slope_sys[DsPhi][Ds2PiPiPi];
 
 
 
@@ -510,10 +534,10 @@ void DsPhiModel::DefineModel()
 
   std::map<std::string,std::map<std::string,double>> Yield_CB_input, Fixed_CB_n, Fixed_CB_alpha, Fixed_CB_Sigma_ratio, Fixed_CB_fraction;
  
-  Yield_CB_input[DsD0][Ds2KKPi]   = 1363;
-  Yield_CB_input[DsD0][Ds2KPiPi]  = 166;
-  Yield_CB_input[DsD0][Ds2PhiPi]  = 848; 
-  Yield_CB_input[DsD0][Ds2PiPiPi] = 386;
+  Yield_CB_input[DsD0][Ds2KKPi]   = 1322.911949;
+  Yield_CB_input[DsD0][Ds2KPiPi]  = 182.9076913;
+  Yield_CB_input[DsD0][Ds2PhiPi]  = 800.1079135; 
+  Yield_CB_input[DsD0][Ds2PiPiPi] = 369.7581512;
  
   Yield_CB_input[DsPhi][Ds2KKPi]   = 45.8;
   Yield_CB_input[DsPhi][Ds2KPiPi]  = 3.8;
@@ -539,6 +563,11 @@ void DsPhiModel::DefineModel()
   Fixed_CB_n[DsPhiSide][Ds2KPiPi]  = 1.0 + (varyAllowed&&par->variation[fixedSig_n]?rand->Gaus(0,0.1*factor):0); 
   Fixed_CB_n[DsPhiSide][Ds2PiPiPi] = 1.0 + (varyAllowed&&par->variation[fixedSig_n]?rand->Gaus(0,0.1*factor):0);
 
+  Fixed_CB_n[DsPhiSideWide][Ds2PhiPi]  = 1.0 + (varyAllowed&&par->variation[fixedSig_n]?rand->Gaus(0,0.1*factor):0); 
+  Fixed_CB_n[DsPhiSideWide][Ds2KKPi]   = 1.0 + (varyAllowed&&par->variation[fixedSig_n]?rand->Gaus(0,0.1*factor):0); 
+  Fixed_CB_n[DsPhiSideWide][Ds2KPiPi]  = 1.0 + (varyAllowed&&par->variation[fixedSig_n]?rand->Gaus(0,0.1*factor):0); 
+  Fixed_CB_n[DsPhiSideWide][Ds2PiPiPi] = 1.0 + (varyAllowed&&par->variation[fixedSig_n]?rand->Gaus(0,0.1*factor):0);
+
   // CB alpha -> From MC 
   Fixed_CB_alpha[DsD0][Ds2PhiPi]       = 2.91078 + (varyAllowed&&par->variation[fixedSig_alpha]?rand->Gaus(0,0.0556065*factor):0);
   Fixed_CB_alpha[DsD0][Ds2KKPi]        = 2.91078 + (varyAllowed&&par->variation[fixedSig_alpha]?rand->Gaus(0,0.0556065*factor):0);
@@ -554,6 +583,11 @@ void DsPhiModel::DefineModel()
   Fixed_CB_alpha[DsPhiSide][Ds2KKPi]   = 2.7604  + (varyAllowed&&par->variation[fixedSig_alpha]?rand->Gaus(0,0.0693368*factor):0);
   Fixed_CB_alpha[DsPhiSide][Ds2KPiPi]  = 3.06495 + (varyAllowed&&par->variation[fixedSig_alpha]?rand->Gaus(0,0.163778*factor):0);
   Fixed_CB_alpha[DsPhiSide][Ds2PiPiPi] = 3.71842 + (varyAllowed&&par->variation[fixedSig_alpha]?rand->Gaus(0,0.26*factor):0);
+
+  Fixed_CB_alpha[DsPhiSideWide][Ds2PhiPi]  = 2.7604  + (varyAllowed&&par->variation[fixedSig_alpha]?rand->Gaus(0,0.0693368*factor):0);
+  Fixed_CB_alpha[DsPhiSideWide][Ds2KKPi]   = 2.7604  + (varyAllowed&&par->variation[fixedSig_alpha]?rand->Gaus(0,0.0693368*factor):0);
+  Fixed_CB_alpha[DsPhiSideWide][Ds2KPiPi]  = 3.06495 + (varyAllowed&&par->variation[fixedSig_alpha]?rand->Gaus(0,0.163778*factor):0);
+  Fixed_CB_alpha[DsPhiSideWide][Ds2PiPiPi] = 3.71842 + (varyAllowed&&par->variation[fixedSig_alpha]?rand->Gaus(0,0.26*factor):0);
 
   // 2 CB sigma ratios -> From MC 
   Fixed_CB_Sigma_ratio[DsD0][Ds2PhiPi]       = 0.427848 + (varyAllowed&&par->variation[fixedSig_Sigmaratio]?rand->Gaus(0,0.0098877):0);
@@ -571,6 +605,11 @@ void DsPhiModel::DefineModel()
   Fixed_CB_Sigma_ratio[DsPhiSide][Ds2KPiPi]  = 0.467814 + (varyAllowed&&par->variation[fixedSig_Sigmaratio]?rand->Gaus(0,0.0130645):0);
   Fixed_CB_Sigma_ratio[DsPhiSide][Ds2PiPiPi] = 0.462447 + (varyAllowed&&par->variation[fixedSig_Sigmaratio]?rand->Gaus(0,0.00826237):0);
 
+  Fixed_CB_Sigma_ratio[DsPhiSideWide][Ds2PhiPi]  = 0.492471 + (varyAllowed&&par->variation[fixedSig_Sigmaratio]?rand->Gaus(0,0.0103285):0);
+  Fixed_CB_Sigma_ratio[DsPhiSideWide][Ds2KKPi]   = 0.492471 + (varyAllowed&&par->variation[fixedSig_Sigmaratio]?rand->Gaus(0,0.0103285):0);
+  Fixed_CB_Sigma_ratio[DsPhiSideWide][Ds2KPiPi]  = 0.467814 + (varyAllowed&&par->variation[fixedSig_Sigmaratio]?rand->Gaus(0,0.0130645):0);
+  Fixed_CB_Sigma_ratio[DsPhiSideWide][Ds2PiPiPi] = 0.462447 + (varyAllowed&&par->variation[fixedSig_Sigmaratio]?rand->Gaus(0,0.00826237):0);
+
   // 2 CB sigma fractions -> From MC 
   Fixed_CB_fraction[DsD0][Ds2PhiPi]       = 0.881908 + (varyAllowed&&par->variation[fixedSig_Sigmafrac]?rand->Gaus(0,0.00890296):0);
   Fixed_CB_fraction[DsD0][Ds2KKPi]        = 0.881908 + (varyAllowed&&par->variation[fixedSig_Sigmafrac]?rand->Gaus(0,0.00890296):0);
@@ -587,6 +626,11 @@ void DsPhiModel::DefineModel()
   Fixed_CB_fraction[DsPhiSide][Ds2KPiPi]  = 0.843349 + (varyAllowed&&par->variation[fixedSig_Sigmafrac]?rand->Gaus(0,0.0136344):0);
   Fixed_CB_fraction[DsPhiSide][Ds2PiPiPi] = 0.80677  + (varyAllowed&&par->variation[fixedSig_Sigmafrac]?rand->Gaus(0,0.0134398):0);
 
+  Fixed_CB_fraction[DsPhiSideWide][Ds2PhiPi]  = 0.807626 + (varyAllowed&&par->variation[fixedSig_Sigmafrac]?rand->Gaus(0,0.0148011):0);
+  Fixed_CB_fraction[DsPhiSideWide][Ds2KKPi]   = 0.807626 + (varyAllowed&&par->variation[fixedSig_Sigmafrac]?rand->Gaus(0,0.0148011):0);
+  Fixed_CB_fraction[DsPhiSideWide][Ds2KPiPi]  = 0.843349 + (varyAllowed&&par->variation[fixedSig_Sigmafrac]?rand->Gaus(0,0.0136344):0);
+  Fixed_CB_fraction[DsPhiSideWide][Ds2PiPiPi] = 0.80677  + (varyAllowed&&par->variation[fixedSig_Sigmafrac]?rand->Gaus(0,0.0134398):0);
+
 
   std::map<std::string,double> Fixed_Norm_Sigma_ratio;
   // Ratio of sigmas from DsD0 to DsPhi (small sigma)
@@ -598,10 +642,10 @@ void DsPhiModel::DefineModel()
 
   // Initial Sigma values
   std::map<std::string,double> Inital_Sigma_values;
-  Inital_Sigma_values[Ds2KKPi]   =  7.4;
-  Inital_Sigma_values[Ds2KPiPi]  =  9.4;
-  Inital_Sigma_values[Ds2PhiPi]  =  7.4;
-  Inital_Sigma_values[Ds2PiPiPi] =  8.4; 
+  Inital_Sigma_values[Ds2KKPi]   =  7.607311884;
+  Inital_Sigma_values[Ds2KPiPi]  =  8.759505659;
+  Inital_Sigma_values[Ds2PhiPi]  =  7.531410483;
+  Inital_Sigma_values[Ds2PiPiPi] =  8.300755734; 
 
 
   // ======================================================== 
@@ -616,15 +660,15 @@ void DsPhiModel::DefineModel()
 
   std::map<std::string,std::map<std::string,double>> Yield_PR_total_input;
  
-  Yield_PR_total_input[DsD0][Ds2KKPi]   = 3250; 
-  Yield_PR_total_input[DsD0][Ds2KPiPi]  =  419;
-  Yield_PR_total_input[DsD0][Ds2PhiPi]  = 1997; 
-  Yield_PR_total_input[DsD0][Ds2PiPiPi] =  924;
+  Yield_PR_total_input[DsD0][Ds2KKPi]   = 2825.133325; 
+  Yield_PR_total_input[DsD0][Ds2KPiPi]  =  392.223144;
+  Yield_PR_total_input[DsD0][Ds2PhiPi]  = 1733.229534; 
+  Yield_PR_total_input[DsD0][Ds2PiPiPi] =  804.0925645;
 
-  Yield_PR_total_input[DsPhi][Ds2KKPi]   =   101; 
-  Yield_PR_total_input[DsPhi][Ds2KPiPi]  =    3.05;
-  Yield_PR_total_input[DsPhi][Ds2PhiPi]  =    45; 
-  Yield_PR_total_input[DsPhi][Ds2PiPiPi] =    18; 
+  Yield_PR_total_input[DsPhi][Ds2KKPi]   =   119.6710013; 
+  Yield_PR_total_input[DsPhi][Ds2KPiPi]  =     6.097907818;
+  Yield_PR_total_input[DsPhi][Ds2PhiPi]  =    57.49308958; 
+  Yield_PR_total_input[DsPhi][Ds2PiPiPi] =    20.66863727; 
 
   //Fraction of Ds*D0 initial value
   std::map<std::string,double> Fraction_DsstD0_initial;
@@ -633,13 +677,13 @@ void DsPhiModel::DefineModel()
   Fraction_DsstD0_initial[Ds2PiPiPi] = 0.49;//0.75;
   Fraction_DsstD0_initial[Ds2KPiPi]  = 0.37;//0.56;
   RooRealVar* Fraction_DsstD0        = new RooRealVar("Fraction_DsstD0",         "" , 0.49,  0 ,1); 
-  RooRealVar* Fraction_DsstD0_Helbin1= new RooRealVar("Fraction_DsstD0_Helbin1", "" , 0.286, 0 ,1); 
-  RooRealVar* Fraction_DsstD0_Helbin2= new RooRealVar("Fraction_DsstD0_Helbin2", "" , 0.343, 0 ,1); 
+  RooRealVar* Fraction_DsstD0_Helbin1= new RooRealVar("Fraction_DsstD0_Helbin1", "" , 0.3016610488, 0 ,1); 
+  RooRealVar* Fraction_DsstD0_Helbin2= new RooRealVar("Fraction_DsstD0_Helbin2", "" , 0.3414680472, 0 ,1); 
 
   if(allConst_exYield) Fraction_DsstD0_Helbin1->setConstant();
   if(allConst_exYield) Fraction_DsstD0_Helbin2->setConstant();
 
-  RooRealVar* DsPhi_BG_fraction      = new RooRealVar("Dsa1_to_DsstPhi_fraction", "" , 0.115 , 0 , 1);
+  RooRealVar* DsPhi_BG_fraction      = new RooRealVar("Dsa1_to_DsstPhi_fraction", "" , 0.172064408 , 0 , 1);
   if(allConst_exYield) DsPhi_BG_fraction->setConstant();
   if(varyAllowed&&par->variation[fixedBG_noDsstPhi]) {
     DsPhi_BG_fraction->setVal(0.0);
@@ -701,6 +745,20 @@ void DsPhiModel::DefineModel()
 
   }
 
+  //RooRealVar* DsKK_DsPhi_Fraction     = new RooRealVar("DsKK_DsPhi_Fraction",     "", 0.2748);//,0.0,1.0);//0.323858);// , 0.0 ,1.0 );
+  //RooRealVar* DsKK_Helbin1_Fraction   = new RooRealVar("DsKK_Helbin1_Fraction",   "", 0.5940); //,0.0,1.0);//0.660636);//  , 0.0 ,1.0 );
+
+  RooRealVar* DsKK_DsPhi_H1_Fraction     = new RooRealVar("DsKK_DsPhi_H1_Fraction" ,     "" , 0.146 + (varyAllowed&&par->variation[fixedBG_DsKK_fractions]?rand->Gaus(0,0.019):0));
+  RooRealVar* DsKK_DsPhi_H2_Fraction     = new RooRealVar("DsKK_DsPhi_H2_Fraction" ,     "" , 0.100 + (varyAllowed&&par->variation[fixedBG_DsKK_fractions]?rand->Gaus(0,0.013):0));
+  RooRealVar* DsKK_DsPhiSide_H1_Fraction = new RooRealVar("DsKK_DsPhiSide_H1_Fraction" , "" , 0.452 + (varyAllowed&&par->variation[fixedBG_DsKK_fractions]?rand->Gaus(0,0.019):0));
+  RooRealVar* DsKK_DsPhiSide_H2_Fraction = new RooRealVar("DsKK_DsPhiSide_H2_Fraction" , "" , 0.303 + (varyAllowed&&par->variation[fixedBG_DsKK_fractions]?rand->Gaus(0,0.013):0));
+
+  
+  RooRealVar* DsKK_to_DsD0_Ratio = new RooRealVar("DsKK_to_DsD0_Ratio","",0.02429974035,0.000001,1000000.0);
+  if(allConst_exYield) DsKK_to_DsD0_Ratio->setConstant();
+
+  //RooRealVar* DsKK_Yield = new RooRealVar("DsKK_Yield","",30.0,0.0,1000000.0);
+
   RooRealVar* DsstKK_DsPhi_Fraction     = new RooRealVar("DsstKK_DsPhi_Fraction",     "", 0.317 , 0.0 ,1.0 );
   RooRealVar* DsstKK_Helbin1_Fraction   = new RooRealVar("DsstKK_Helbin1_Fraction",   "", 0.5   , 0.0 ,1.0 );
   
@@ -725,7 +783,7 @@ void DsPhiModel::DefineModel()
   RooRealVar* DD_DsstDs_Fraction       = new RooRealVar("DD_DsstDs_Fraction",        "" , 0.33);
   RooRealVar* DD_DsD_Fraction          = new RooRealVar("DD_DsD_Fraction",           "" , 0.21);
 
-  RooRealVar *Ratio_DD_to_Dsa1         = new RooRealVar("Ratio_DD_to_Dsa1",          "",  1.006 ,0.0 ,10.0);
+  RooRealVar *Ratio_DD_to_Dsa1         = new RooRealVar("Ratio_DD_to_Dsa1",          "",  0.5669966439 ,0.0 ,10.0);
   if(allConst_exYield) Ratio_DD_to_Dsa1->setConstant(); 
   //Range 4900 to 5900
   if(true){
@@ -768,11 +826,11 @@ void DsPhiModel::DefineModel()
   // ========================================================
 
   // Fraction of DsD0 peak in two helicity bins to be the same for all Ds modes
-  RooRealVar* splitHel_DsD0_peak_fraction    = new RooRealVar("splitHel_DsD0_peak_fraction",    "", 0.594, 0.0 ,1.0 );
+  RooRealVar* splitHel_DsD0_peak_fraction    = new RooRealVar("splitHel_DsD0_peak_fraction",    "", 0.592138372, 0.0 ,1.0 );
   if(allConst_exYield) splitHel_DsD0_peak_fraction->setConstant();
 
   // Fraction of DsD0 PR peak in two helicity bins to be the same for all Ds modes
-  RooRealVar* splitHel_DsD0_PR_peak_fraction = new RooRealVar("splitHel_DsD0_PR_peak_fraction", "", 0.595, 0.0 ,1.0 );
+  RooRealVar* splitHel_DsD0_PR_peak_fraction = new RooRealVar("splitHel_DsD0_PR_peak_fraction", "", 0.5931256318, 0.0 ,1.0 );
   if(allConst_exYield) splitHel_DsD0_PR_peak_fraction->setConstant();
   
   // Fraction of Ds*Phi peak in two helicity bins to be the same for all Ds modes
@@ -791,7 +849,7 @@ void DsPhiModel::DefineModel()
   // ========================================================
   
   RooRealVar* global_csi_hill   = new RooRealVar("global_csi_hill",   "Global csi HILL",    1.0             );
-  RooRealVar* global_csi        = new RooRealVar("global_csi",        "Global csi",         0.85,   0,    2 );
+  RooRealVar* global_csi        = new RooRealVar("global_csi",        "Global csi",         0.6774473528,   0,    2 );
   RooRealVar* global_R          = new RooRealVar("global_R",          "Global R",           1.0             );
   RooRealVar* global_f          = new RooRealVar("global_f",          "Global f",           1.0             );
   RooRealVar* global_G          = new RooRealVar("global_G",          "Global G",           1.0             );
@@ -824,13 +882,13 @@ void DsPhiModel::DefineModel()
   
 
   // Ds*D*0 gamma gamma
-  RooRealVar* DsstarDstar0_gamma_gamma_a   = new RooRealVar("DsstarDstar0_gamma_gamma_a",   "DsstarDstar0 gamma a",   4667  + (varyAllowed&&par->variation[fixedBG_DsD0]?rand->Gaus(0,1):0) );
-  RooRealVar* DsstarDstar0_gamma_gamma_b   = new RooRealVar("DsstarDstar0_gamma_gamma_b",   "DsstarDstar0 gamma b",   5150  + (varyAllowed&&par->variation[fixedBG_DsD0]?rand->Gaus(0,1):0) );          
+  //RooRealVar* DsstarDstar0_gamma_gamma_a   = new RooRealVar("DsstarDstar0_gamma_gamma_a",   "DsstarDstar0 gamma a",   4667  + (varyAllowed&&par->variation[fixedBG_DsD0]?rand->Gaus(0,1):0) );
+  //RooRealVar* DsstarDstar0_gamma_gamma_b   = new RooRealVar("DsstarDstar0_gamma_gamma_b",   "DsstarDstar0 gamma b",   5150  + (varyAllowed&&par->variation[fixedBG_DsD0]?rand->Gaus(0,1):0) );          
 
   RooRealVar* DsstarDstar0_gamma_pi0_a     = new RooRealVar("DsstarDstar0_gamma_pi0_a",     "DsstarDstar0 pi0 a",     4748  + (varyAllowed&&par->variation[fixedBG_DsstDst0_endpoints]?rand->Gaus(0,10):0) );
   RooRealVar* DsstarDstar0_gamma_pi0_b     = new RooRealVar("DsstarDstar0_gamma_pi0_b",     "DsstarDstar0 pi0 b",     5062  + (varyAllowed&&par->variation[fixedBG_DsstDst0_endpoints]?rand->Gaus(0,10):0) );          
 
-  RooRealVar *Ratio_DsstDst0_to_Lowmass = new RooRealVar("Ratio_DsstDst0_to_Lowmass","Ratio_DsstDst0_to_Lowmass",0.639 ,0.0 ,10.0);
+  RooRealVar *Ratio_DsstDst0_to_Lowmass = new RooRealVar("Ratio_DsstDst0_to_Lowmass","Ratio_DsstDst0_to_Lowmass",0.6064493983 ,0.0 ,10.0);
   if(allConst_exYield) Ratio_DsstDst0_to_Lowmass->setConstant();
 
   // Fraction of D* -> D pi0 vs. D* -> D pi0 gamma adjusted for fraction in mass window
@@ -869,6 +927,43 @@ void DsPhiModel::DefineModel()
   // ==================================================================
 
   if( mB->getMin() == 4900) {
+    /*
+    // +/- 40MeV phi sideband but +/- 20MeV inner
+    Signal_Helbin1_Fraction->setVal(    0.936358+ (varyAllowed&&par->variation[fixedSig_BinRatios]?rand->Gaus(0,0.00421603):0));
+    Signal_DsPhi_Fraction->setVal(      0.961307+ (varyAllowed&&par->variation[fixedBG_DsPhi]?rand->Gaus(0,0.00432837):0));
+    DsstPhi_DsPhi_Fraction->setVal(     0.961307+ (varyAllowed&&par->variation[fixedBG_DsPhi]?rand->Gaus(0,0.00432837):0));
+
+    Dsa1_DsPhi_Fraction->setVal(        0.612817+ (varyAllowed&&par->variation[fixedBG_Dsa1]?rand->Gaus(0,0.00432837):0));
+    splitHel_Dsa1_peak_fraction->setVal(0.662824+ (varyAllowed&&par->variation[fixedBG_Dsa1]?rand->Gaus(0,0.0123424):0));
+
+    DD_DsPhi_H1_Fraction->setVal(       0.784153+ (varyAllowed&&par->variation[fixedBG_DD_Ratios]?rand->Gaus(0,0.0215047):0));
+    DD_DsPhi_H2_Fraction->setVal(       0.10929+ (varyAllowed&&par->variation[fixedBG_DD_Ratios]?rand->Gaus(0,0.0163086):0));
+    DD_DsPhiSide_H1_Fraction->setVal(   0.0628415+ (varyAllowed&&par->variation[fixedBG_DD_Ratios]?rand->Gaus(0,0.012685):0));
+    DD_DsPhiSide_H2_Fraction->setVal(   0.0437158+ (varyAllowed&&par->variation[fixedBG_DD_Ratios]?rand->Gaus(0,0.0106874):0));
+
+    DD_DsDs_Fraction->setVal(   0.666475+ (varyAllowed&&par->variation[fixedBG_DD_Ratios]?rand->Gaus(0,0.01):0));
+    DD_DsstDs_Fraction->setVal( 0.0402676+ (varyAllowed&&par->variation[fixedBG_DD_Ratios]?rand->Gaus(0,0.01):0));
+    DD_DsDs_Fraction->setVal(   0.293258+ (varyAllowed&&par->variation[fixedBG_DD_Ratios]?rand->Gaus(0,0.01):0));
+    
+    // +/- 80MeV phi sideband
+    Signal_Helbin1_Fraction->setVal(    0.933166+ (varyAllowed&&par->variation[fixedSig_BinRatios]?rand->Gaus(0,0.00415587):0));
+    Signal_DsPhi_Fraction->setVal(      0.866175+ (varyAllowed&&par->variation[fixedBG_DsPhi]?rand->Gaus(0,0.00385753):0));
+    DsstPhi_DsPhi_Fraction->setVal(     0.866175+ (varyAllowed&&par->variation[fixedBG_DsPhi]?rand->Gaus(0,0.00385753):0));
+
+    Dsa1_DsPhi_Fraction->setVal(        0.204549+ (varyAllowed&&par->variation[fixedBG_Dsa1]?rand->Gaus(0,0.00385753):0));
+    splitHel_Dsa1_peak_fraction->setVal(0.659097+ (varyAllowed&&par->variation[fixedBG_Dsa1]?rand->Gaus(0,0.00975717):0));
+
+    DD_DsPhi_H1_Fraction->setVal(       0.677835+ (varyAllowed&&par->variation[fixedBG_DD_Ratios]?rand->Gaus(0,0.0237239):0));
+    DD_DsPhi_H2_Fraction->setVal(       0.0773196+ (varyAllowed&&par->variation[fixedBG_DD_Ratios]?rand->Gaus(0,0.0135598):0));
+    DD_DsPhiSide_H1_Fraction->setVal(   0.170103+ (varyAllowed&&par->variation[fixedBG_DD_Ratios]?rand->Gaus(0,0.0190745):0));
+    DD_DsPhiSide_H2_Fraction->setVal(   0.0747423+ (varyAllowed&&par->variation[fixedBG_DD_Ratios]?rand->Gaus(0,0.0133505):0));
+
+    DD_DsDs_Fraction->setVal(   0.662171+ (varyAllowed&&par->variation[fixedBG_DD_Ratios]?rand->Gaus(0,0.01):0));
+    DD_DsstDs_Fraction->setVal( 0.0452869+ (varyAllowed&&par->variation[fixedBG_DD_Ratios]?rand->Gaus(0,0.01):0));
+    DD_DsDs_Fraction->setVal(   0.292542+ (varyAllowed&&par->variation[fixedBG_DD_Ratios]?rand->Gaus(0,0.01):0));
+    */
+    // Nominal
+    
     Signal_Helbin1_Fraction->setVal(    0.931739+ (varyAllowed&&par->variation[fixedSig_BinRatios]?rand->Gaus(0,0.00419523):0));
     Signal_DsPhi_Fraction->setVal(      0.883201+ (varyAllowed&&par->variation[fixedBG_DsPhi]?rand->Gaus(0,0.00397669):0));
     DsstPhi_DsPhi_Fraction->setVal(     0.883201+ (varyAllowed&&par->variation[fixedBG_DsPhi]?rand->Gaus(0,0.00397669):0));
@@ -884,7 +979,7 @@ void DsPhiModel::DefineModel()
     DD_DsDs_Fraction->setVal(   0.666475+ (varyAllowed&&par->variation[fixedBG_DD_Ratios]?rand->Gaus(0,0.01):0));
     DD_DsstDs_Fraction->setVal( 0.0402676+ (varyAllowed&&par->variation[fixedBG_DD_Ratios]?rand->Gaus(0,0.01):0));
     DD_DsDs_Fraction->setVal(   0.293258+ (varyAllowed&&par->variation[fixedBG_DD_Ratios]?rand->Gaus(0,0.01):0));
-  
+    
   } else if( mB->getMin() == 4895) {
     Signal_Helbin1_Fraction->setVal(    0.931745+ (varyAllowed&&par->variation[fixedSig_BinRatios]?rand->Gaus(0,0.00419522):0));
     Signal_DsPhi_Fraction->setVal(      0.883192+ (varyAllowed&&par->variation[fixedBG_DsPhi]?rand->Gaus(0,0.00397661):0));
@@ -1138,7 +1233,23 @@ void DsPhiModel::DefineModel()
   Blind_number[DsPhiSide][Ds2PiPiPi][Helbin2] = 1.0;
   Blind_number[DsPhiSide][Ds2KPiPi][Helbin2]  = 1.0;
 
- 
+
+
+  Blind_number[DsPhiSideWide][Ds2PhiPi][both]  = 1.5;
+  Blind_number[DsPhiSideWide][Ds2KKPi][both]   = 2.5;
+  Blind_number[DsPhiSideWide][Ds2PiPiPi][both] = 1.1;
+  Blind_number[DsPhiSideWide][Ds2KPiPi][both]  = 1.0;
+  
+  Blind_number[DsPhiSideWide][Ds2PhiPi][Helbin1]  = 1.0;
+  Blind_number[DsPhiSideWide][Ds2KKPi][Helbin1]   = 1.0;
+  Blind_number[DsPhiSideWide][Ds2PiPiPi][Helbin1] = 1.0;
+  Blind_number[DsPhiSideWide][Ds2KPiPi][Helbin1]  = 1.0;
+  
+  Blind_number[DsPhiSideWide][Ds2PhiPi][Helbin2]  = 1.0;
+  Blind_number[DsPhiSideWide][Ds2KKPi][Helbin2]   = 1.0;
+  Blind_number[DsPhiSideWide][Ds2PiPiPi][Helbin2] = 1.0;
+  Blind_number[DsPhiSideWide][Ds2KPiPi][Helbin2]  = 1.0;
+
   // ======================================================== 
   // =========== Create Branching fraction ==================
   // ======================================================== 
@@ -1198,27 +1309,49 @@ void DsPhiModel::DefineModel()
   ///////-----------------------------------------------------------------------
   RooRealVar* Correction_factor = new RooRealVar("Correction_factor","",738.0368098);
   
-  Branching_fraction_all = new RooRealVar("Branching_fraction",       "Branching Fraction (#times10^{-7})",  10.0, -100.0, 10000.0 ); //*0.01355
+  Branching_fraction_all = new RooRealVar("Branching_fraction",       "Branching Fraction (#times10^{-7})",  1.167895512, -20.0, 100.0 );//-100.0, 10000.0 ); //*0.01355
+  //Branching_fraction_all = new RooRealVar("Branching_fraction",       "Branching Fraction (#times10^{-7})",  1.167895512, -0.0, 100.0 );//-100.0, 10000.0 ); //*0.01355
+
+  Br_syst = new RooRealVar("Br_syst", "" , 0.0, -3.0, 3.0);
+
+  if(!par->SetLimits) Br_syst->setConstant();
+
+  RooFormulaVar* Branching_fraction_temp = new RooFormulaVar("Branching_fraction_temp", "Branching_fraction_temp" , "@0 + @1" , RooArgList(*Branching_fraction_all, *Br_syst ) );
+
   //Branching_fraction_all->setVal(3.0);
   
   if(NoBR&&!genModel){
-    Branching_fraction_all->setVal(0.0);
-    Branching_fraction_all->setConstant();
+    ((RooRealVar*)Branching_fraction_all)->setVal(0.0);
+    ((RooRealVar*)Branching_fraction_all)->setConstant();
   }
 
   if(par->doSensitivity&&genModel){ 
-    Branching_fraction_all->setVal(par->sensitivityBR);
+    ((RooRealVar*)Branching_fraction_all)->setVal(par->sensitivityBR);
   } else if(par->doSensitivity&&!genModel){
-    Branching_fraction_all->setVal(0.0);
-    Branching_fraction_all->setConstant();  
+    ((RooRealVar*)Branching_fraction_all)->setVal(0.0);
+    ((RooRealVar*)Branching_fraction_all)->setConstant();  
   }
 
   // Four seperate Branching fractions 
-  Branching_fraction[Ds2PhiPi]   = new RooRealVar("Branching_fraction_Ds2PhiPi",  "",  18.7 , -100.0, 10000.0 );
-  Branching_fraction[Ds2KKPi]    = new RooRealVar("Branching_fraction_Ds2KKPi",   "",  18.7 , -100.0, 10000.0 );
-  Branching_fraction[Ds2KPiPi]   = new RooRealVar("Branching_fraction_Ds2KPiPi",  "",  18.7 , -100.0, 10000.0 );
-  Branching_fraction[Ds2PiPiPi]  = new RooRealVar("Branching_fraction_Ds2PiPiPi", "",  18.7 , -100.0, 10000.0 );
+  Branching_fraction[Ds2PhiPi]   = new RooRealVar("Branching_fraction_Ds2PhiPi",  "",  1.167895512 , -100.0, 10000.0 );
+  Branching_fraction[Ds2KKPi]    = new RooRealVar("Branching_fraction_Ds2KKPi",   "",  1.167895512 , -100.0, 10000.0 );
+  Branching_fraction[Ds2KPiPi]   = new RooRealVar("Branching_fraction_Ds2KPiPi",  "",  1.167895512 , -100.0, 10000.0 );
+  Branching_fraction[Ds2PiPiPi]  = new RooRealVar("Branching_fraction_Ds2PiPiPi", "",  1.167895512 , -100.0, 10000.0 );
  
+  if(needsBlinding){
+    Branching_fraction_all_unblinded         = new RooUnblindUniform("Branching_fraction_UnBlinded",           "Branching_fraction Unblind ",            "UnblindBranching_fractionString",         10.0, *Branching_fraction_all  );
+    Branching_fraction_unblinded[Ds2PhiPi]   = new RooUnblindUniform("Branching_fraction_UnBlinded_Ds2PhiPi",  "Branching_fraction UnBlinded Ds2PhiPi",  "UnblindBranching_fractionStringDs2PhiPi", 10.0, *Branching_fraction[Ds2PhiPi]);
+    Branching_fraction_unblinded[Ds2KKPi]    = new RooUnblindUniform("Branching_fraction_UnBlinded_Ds2KKPi",   "Branching_fraction UnBlinded Ds2KKPi",   "UnblindBranching_fractionStringDs2KKPi",  10.0, *Branching_fraction[Ds2KKPi]);
+    Branching_fraction_unblinded[Ds2KPiPi]   = new RooUnblindUniform("Branching_fraction_UnBlinded_Ds2KPiPi",  "Branching_fraction UnBlinded Ds2KPiPi",  "UnblindBranching_fractionStringDs2KPiPi", 10.0, *Branching_fraction[Ds2KPiPi]);
+    Branching_fraction_unblinded[Ds2PiPiPi]  = new RooUnblindUniform("Branching_fraction_UnBlinded_Ds2PiPiPi", "Branching_fraction UnBlinded Ds2PiPiPi", "UnblindBranching_fractionStringDs2PiPiPi",10.0, *Branching_fraction[Ds2PiPiPi]);           
+  } else {
+    //Branching_fraction_all_unblinded         = Branching_fraction_all;      
+    Branching_fraction_all_unblinded         = Branching_fraction_temp;      
+    Branching_fraction_unblinded[Ds2PhiPi]   = Branching_fraction[Ds2PhiPi];
+    Branching_fraction_unblinded[Ds2KKPi]    = Branching_fraction[Ds2KKPi];  
+    Branching_fraction_unblinded[Ds2KPiPi]   = Branching_fraction[Ds2KPiPi];   
+    Branching_fraction_unblinded[Ds2PiPiPi]  = Branching_fraction[Ds2PiPiPi];  
+  }
  
  
   // ======================================================== 
@@ -1255,6 +1388,12 @@ void DsPhiModel::DefineModel()
   Adet[Ds2PiPiPi]  = new RooRealVar("Adet_Ds2PiPiPi","Adet_Ds2PiPiPi", 0.0008);          // Api
   Adet[Ds2KPiPi]   = new RooRealVar("Adet_Ds2KPiPi", "Adet_Ds2KPiPi", -0.0106 + 0.0008); // AKpi + Api
 
+  
+  RooRealVar* Asymmetry_DsKK   = new RooRealVar("Asymmetry_DsKK",       "Asymmetry_DsKK",  0.0, -1.0, 1.0 );
+  //RooRealVar* Asymmetry_DsKK   = new RooRealVar("Asymmetry_DsKK",       "Asymmetry_DsKK",  0.0);
+
+
+
   // --------- Yields for DsD0, in an array (as line 447 of Model.C) ---------------
   if(par->debug) std::cout<<"Running: DsPhiModel::DefineModel() --> Making RooRealVars"<<std::endl;
  
@@ -1287,15 +1426,15 @@ void DsPhiModel::DefineModel()
               if(allConst_exYield) ((RooRealVar*)yield_peak[*t][both][*ds][*ph][DsD0][*m][*c][*a])->setConstant();
             }
 
-
+            yield_peak[*t][both][*ds][*ph][DsD0][*m][plus][*a] = yield_peak[*t][both][*ds][*ph][DsD0][*m][minus][*a];
 
             cat_name = Form("%s_%s_%s_%s_%s_%s",(*t).c_str(),both.c_str(),(*ds).c_str(),(*ph).c_str(),both.c_str(),(*a).c_str());
             
             if(par->sumOverCharges){
               if(fitFourBr){
-                Signal_total[*t][both][*ds][*ph][DsPhi][*m][both][*a]   = new RooFormulaVar(Form("yield_peak_total_%s_%s_%s",DsPhi.c_str(),    (*m).c_str(), cat_name.c_str()), Form("Yield %s %s",Bmod[DsPhi].c_str(),     mod[(*m)].c_str()),"(@0*@1)/(@2*@3)" , RooArgList(*Branching_fraction[*m],*yield_peak[*t][both][*ds][*ph][DsD0][*m][both][*a], *eff_ratio_rrv[*m],*Correction_factor));
+                Signal_total[*t][both][*ds][*ph][DsPhi][*m][both][*a]   = new RooFormulaVar(Form("yield_peak_total_%s_%s_%s",DsPhi.c_str(),    (*m).c_str(), cat_name.c_str()), Form("Yield %s %s",Bmod[DsPhi].c_str(),     mod[(*m)].c_str()),"(@0*@1)/(@2*@3)" , RooArgList(*Branching_fraction_unblinded[*m],*yield_peak[*t][both][*ds][*ph][DsD0][*m][both][*a], *eff_ratio_rrv[*m],*Correction_factor));
               }else if(fitSingleBR){
-                Signal_total[*t][both][*ds][*ph][DsPhi][*m][both][*a]   = new RooFormulaVar(Form("yield_peak_total_%s_%s_%s",DsPhi.c_str(),    (*m).c_str(), cat_name.c_str()), Form("Yield %s %s",Bmod[DsPhi].c_str(),     mod[(*m)].c_str()),"(@0*@1)/(@2*@3)" , RooArgList(*Branching_fraction_all,*yield_peak[*t][both][*ds][*ph][DsD0][*m][both][*a], *eff_ratio_rrv[*m],*Correction_factor)); 
+                Signal_total[*t][both][*ds][*ph][DsPhi][*m][both][*a]   = new RooFormulaVar(Form("yield_peak_total_%s_%s_%s",DsPhi.c_str(),    (*m).c_str(), cat_name.c_str()), Form("Yield %s %s",Bmod[DsPhi].c_str(),     mod[(*m)].c_str()),"(@0*@1)/(@2*@3)" , RooArgList(*Branching_fraction_all_unblinded,*yield_peak[*t][both][*ds][*ph][DsD0][*m][both][*a], *eff_ratio_rrv[*m],*Correction_factor)); 
               } else {
                 Signal_total[*t][both][*ds][*ph][DsPhi][*m][both][*a]   = new RooRealVar(   Form("yield_peak_total_%s_%s_%s",DsPhi.c_str(),    (*m).c_str(), cat_name.c_str()), Form("Yield %s %s",Bmod[DsPhi].c_str(),     mod[(*m)].c_str()), Yield_CB_input[DsPhi][*m],  -20, 100000); 
                 if(NoYield[*m]){
@@ -1303,23 +1442,34 @@ void DsPhiModel::DefineModel()
                   ((RooRealVar*)Signal_total[*t][both][*ds][*ph][DsPhi][*m][both][*a])->setConstant();
                 }
               }
+              //DsKK_total[*t][both][*ds][*ph][DsPhi][*m][both][*a]   = new RooFormulaVar(Form("yield_DsKK_total_%s_%s_%s",DsPhi.c_str(),    (*m).c_str(), cat_name.c_str()), Form("Yield %s %s",Bmod[DsPhi].c_str(),     mod[(*m)].c_str()),"(@0*@1)" , RooArgList(*DsKK_to_DsD0_Ratio,*Signal_total[*t][both][*ds][*ph][DsPhi][*m][both][*a])); 
+              DsKK_total[*t][both][*ds][*ph][DsPhi][*m][both][*a]   = new RooFormulaVar(Form("yield_DsKK_total_%s_%s_%s",DsPhi.c_str(),    (*m).c_str(), cat_name.c_str()), Form("Yield %s %s",Bmod[DsPhi].c_str(),     mod[(*m)].c_str()),"(@0*@1)" , RooArgList(*DsKK_to_DsD0_Ratio,*yield_peak[*t][both][*ds][*ph][DsD0][*m][both][*a])); 
+                
 
             } else {
               cat_name = Form("%s_%s_%s_%s_%s_%s",(*t).c_str(),both.c_str(),(*ds).c_str(),(*ph).c_str(),both.c_str(),(*a).c_str());
               Signal_total[*t][both][*ds][*ph][DsPhi][*m][both][*a]   = new RooRealVar(   Form("yield_peak_total_%s_%s_%s",DsPhi.c_str(),    (*m).c_str(), cat_name.c_str()), Form("Yield total %s %s",Bmod[DsPhi].c_str(),     mod[(*m)].c_str()), 2*Yield_CB_input[DsPhi][*m],  -20, 100000); 
                 
               if(fitFourBr){
-                Signal_total[*t][both][*ds][*ph][DsPhi][*m][plus][*a]   = new RooFormulaVar(Form("yield_peak_plus_%s_%s_%s", DsPhi.c_str(),    (*m).c_str(), cat_name.c_str()), Form("Yield plus  %s %s",Bmod[DsPhi].c_str(),     mod[(*m)].c_str()), "@0*(1-@1)/2-@2-@3" , RooArgList(*Signal_total[*t][both][*ds][*ph][DsPhi][*m][both][*a],*Asymmetry_unblinded[*m],*Aprod,*Adet[*m])); 
-                Signal_total[*t][both][*ds][*ph][DsPhi][*m][minus][*a]  = new RooFormulaVar(Form("yield_peak_minus_%s_%s_%s",DsPhi.c_str(),    (*m).c_str(), cat_name.c_str()), Form("Yield minus %s %s",Bmod[DsPhi].c_str(),     mod[(*m)].c_str()), "@0*(1+@1)/2-@2-@3" , RooArgList(*Signal_total[*t][both][*ds][*ph][DsPhi][*m][both][*a],*Asymmetry_unblinded[*m],*Aprod,*Adet[*m])); 
-              
-              } else {
-                Signal_total[*t][both][*ds][*ph][DsPhi][*m][plus][*a]   = new RooFormulaVar(Form("yield_peak_plus_%s_%s_%s", DsPhi.c_str(),    (*m).c_str(), cat_name.c_str()), Form("Yield plus  %s %s",Bmod[DsPhi].c_str(),     mod[(*m)].c_str()), "@0*(1-@1)/2-@2-@3" , RooArgList(*Signal_total[*t][both][*ds][*ph][DsPhi][*m][both][*a],*Asymmetry_all_unblinded,*Aprod,*Adet[*m])); 
-                Signal_total[*t][both][*ds][*ph][DsPhi][*m][minus][*a]  = new RooFormulaVar(Form("yield_peak_minus_%s_%s_%s",DsPhi.c_str(),    (*m).c_str(), cat_name.c_str()), Form("Yield minus %s %s",Bmod[DsPhi].c_str(),     mod[(*m)].c_str()), "@0*(1+@1)/2-@2-@3" , RooArgList(*Signal_total[*t][both][*ds][*ph][DsPhi][*m][both][*a],*Asymmetry_all_unblinded,*Aprod,*Adet[*m])); 
-                //Signal_total[*t][both][*ds][*ph][DsPhi][*m][plus][*a]   = new RooRealVar(   Form("yield_peak_plus_%s_%s_%s",DsPhi.c_str(),    (*m).c_str(), cat_name.c_str()), Form("Yield total %s %s",Bmod[DsPhi].c_str(),     mod[(*m)].c_str()), Yield_CB_input[DsPhi][*m],  -20, 100000); 
-                //Signal_total[*t][both][*ds][*ph][DsPhi][*m][minus][*a]  = new RooRealVar(   Form("yield_peak_minus_%s_%s_%s",DsPhi.c_str(),    (*m).c_str(), cat_name.c_str()), Form("Yield total %s %s",Bmod[DsPhi].c_str(),     mod[(*m)].c_str()), Yield_CB_input[DsPhi][*m],  -20, 100000); 
+                Signal_total[*t][both][*ds][*ph][DsPhi][*m][plus][*a]   = new RooFormulaVar(Form("yield_peak_plus_%s_%s_%s", DsPhi.c_str(),    (*m).c_str(), cat_name.c_str()), Form("Yield plus  %s %s",Bmod[DsPhi].c_str(),     mod[(*m)].c_str()), "@0*(1-@1-@2-@3)/2" , RooArgList(*Signal_total[*t][both][*ds][*ph][DsPhi][*m][both][*a],*Asymmetry_unblinded[*m],*Aprod,*Adet[*m])); 
+                Signal_total[*t][both][*ds][*ph][DsPhi][*m][minus][*a]  = new RooFormulaVar(Form("yield_peak_minus_%s_%s_%s",DsPhi.c_str(),    (*m).c_str(), cat_name.c_str()), Form("Yield minus %s %s",Bmod[DsPhi].c_str(),     mod[(*m)].c_str()), "@0*(1+@1+@2+@3)/2" , RooArgList(*Signal_total[*t][both][*ds][*ph][DsPhi][*m][both][*a],*Asymmetry_unblinded[*m],*Aprod,*Adet[*m])); 
+              }else if(fitSingleBR){
+                Signal_total[*t][both][*ds][*ph][DsPhi][*m][plus][*a]   = new RooFormulaVar(Form("yield_peak_plus_%s_%s_%s", DsPhi.c_str(),    (*m).c_str(), cat_name.c_str()), Form("Yield %s %s",Bmod[DsPhi].c_str(),     mod[(*m)].c_str()),"((@0*(@1+@2))/(@3*@4))*((1-@5-@6-@7)/2)" , RooArgList(*Branching_fraction_all_unblinded,*yield_peak[*t][both][*ds][*ph][DsD0][*m][plus][*a],*yield_peak[*t][both][*ds][*ph][DsD0][*m][minus][*a], *eff_ratio_rrv[*m],*Correction_factor,*Asymmetry_all_unblinded,*Aprod,*Adet[*m])); 
+                Signal_total[*t][both][*ds][*ph][DsPhi][*m][minus][*a]  = new RooFormulaVar(Form("yield_peak_minus_%s_%s_%s",DsPhi.c_str(),    (*m).c_str(), cat_name.c_str()), Form("Yield %s %s",Bmod[DsPhi].c_str(),     mod[(*m)].c_str()),"((@0*(@1+@2))/(@3*@4))*((1+@5+@6+@7)/2)" , RooArgList(*Branching_fraction_all_unblinded,*yield_peak[*t][both][*ds][*ph][DsD0][*m][plus][*a],*yield_peak[*t][both][*ds][*ph][DsD0][*m][minus][*a], *eff_ratio_rrv[*m],*Correction_factor,*Asymmetry_all_unblinded,*Aprod,*Adet[*m])); 
               
 
+              } else {
+                Signal_total[*t][both][*ds][*ph][DsPhi][*m][plus][*a]   = new RooFormulaVar(Form("yield_peak_plus_%s_%s_%s", DsPhi.c_str(),    (*m).c_str(), cat_name.c_str()), Form("Yield plus  %s %s",Bmod[DsPhi].c_str(),     mod[(*m)].c_str()), "@0*(1-@1-@2-@3)/2" , RooArgList(*Signal_total[*t][both][*ds][*ph][DsPhi][*m][both][*a],*Asymmetry_all_unblinded,*Aprod,*Adet[*m])); 
+                Signal_total[*t][both][*ds][*ph][DsPhi][*m][minus][*a]  = new RooFormulaVar(Form("yield_peak_minus_%s_%s_%s",DsPhi.c_str(),    (*m).c_str(), cat_name.c_str()), Form("Yield minus %s %s",Bmod[DsPhi].c_str(),     mod[(*m)].c_str()), "@0*(1+@1+@2+@3)/2" , RooArgList(*Signal_total[*t][both][*ds][*ph][DsPhi][*m][both][*a],*Asymmetry_all_unblinded,*Aprod,*Adet[*m])); 
+                //Signal_total[*t][both][*ds][*ph][DsPhi][*m][plus][*a]   = new RooRealVar(   Form("yield_peak_plus_%s_%s_%s",DsPhi.c_str(),    (*m).c_str(), cat_name.c_str()), Form("Yield total %s %s",Bmod[DsPhi].c_str(),     mod[(*m)].c_str()), Yield_CB_input[DsPhi][*m],  -20, 100000); 
+                //Signal_total[*t][both][*ds][*ph][DsPhi][*m][minus][*a]  = new RooRealVar(   Form("yield_peak_minus_%s_%s_%s",DsPhi.c_str(),    (*m).c_str(), cat_name.c_str()), Form("Yield total %s %s",Bmod[DsPhi].c_str(),     mod[(*m)].c_str()), Yield_CB_input[DsPhi][*m],  -20, 100000); 
               }
+
+              //DsKK_total[*t][both][*ds][*ph][DsPhi][*m][plus][*a]  = DsKK_total[*t][both][*ds][*ph][DsPhi][*m][both][*a];
+              //DsKK_total[*t][both][*ds][*ph][DsPhi][*m][minus][*a] = DsKK_total[*t][both][*ds][*ph][DsPhi][*m][both][*a];
+              DsKK_total[*t][both][*ds][*ph][DsPhi][*m][plus][*a]    = new RooFormulaVar(Form("yield_DsKK_plus_%s_%s_%s", DsPhi.c_str(),    (*m).c_str(), cat_name.c_str()), Form("Yield %s %s",Bmod[DsPhi].c_str(),     mod[(*m)].c_str()),"(@0*@1*(1-@2))" , RooArgList(*DsKK_to_DsD0_Ratio,*yield_peak[*t][both][*ds][*ph][DsD0][*m][minus][*a],*Asymmetry_DsKK)); 
+              DsKK_total[*t][both][*ds][*ph][DsPhi][*m][minus][*a]   = new RooFormulaVar(Form("yield_DsKK_minus_%s_%s_%s",DsPhi.c_str(),    (*m).c_str(), cat_name.c_str()), Form("Yield %s %s",Bmod[DsPhi].c_str(),     mod[(*m)].c_str()),"(@0*@1*(1+@2))" , RooArgList(*DsKK_to_DsD0_Ratio,*yield_peak[*t][both][*ds][*ph][DsD0][*m][minus][*a],*Asymmetry_DsKK)); 
+
             }
 
             for(std::vector<std::string>::iterator c=allchargeList.begin();c!=allchargeList.end();c++){
@@ -1327,47 +1477,56 @@ void DsPhiModel::DefineModel()
 
               yield_peak[*t][both][*ds][*ph][DsPhi][*m][*c][*a]     = new RooFormulaVar(Form("yield_peak_%s_%s_%s",DsPhi.c_str(),    (*m).c_str(), cat_name.c_str()), Form("Yield %s %s",Bmod[DsPhi].c_str(),     mod[(*m)].c_str()),"@0*@1" ,     RooArgList(*Signal_DsPhi_Fraction, *Signal_total[*t][both][*ds][*ph][DsPhi][*m][*c][*a]));
               yield_peak[*t][both][*ds][*ph][DsPhiSide][*m][*c][*a] = new RooFormulaVar(Form("yield_peak_%s_%s_%s",DsPhiSide.c_str(),(*m).c_str(), cat_name.c_str()), Form("Yield %s %s",Bmod[DsPhiSide].c_str(), mod[(*m)].c_str()),"(1-@0)*@1" , RooArgList(*Signal_DsPhi_Fraction, *Signal_total[*t][both][*ds][*ph][DsPhi][*m][*c][*a]));
+              yield_peak[*t][both][*ds][*ph][DsPhiSideWide][*m][*c][*a] = new RooFormulaVar(Form("yield_peak_%s_%s_%s",DsPhiSideWide.c_str(),(*m).c_str(), cat_name.c_str()), Form("Yield %s %s",Bmod[DsPhiSide].c_str(), mod[(*m)].c_str()),"(1-@0)*@1" , RooArgList(*Signal_DsPhi_Fraction, *Signal_total[*t][both][*ds][*ph][DsPhi][*m][*c][*a]));
               
               // Blinding
               if(needsBlinding){
                 B_yield[*t][both][*ds][*ph][DsD0][*m][*c][*a]      = yield_peak[*t][both][*ds][*ph][DsD0][*m][*c][*a];
                 B_yield[*t][both][*ds][*ph][DsPhi][*m][*c][*a]     = new RooUnblindUniform(Form("B_nsig_DsPhi_%s_%s",    (*m).c_str(),cat_name.c_str()),  Form("Unblind Yield %s %s",Bmod[DsPhi].c_str(),     mod[(*m)].c_str()),  "nsigBuDsPhiblindePhi",       Blind_number[DsPhi][*m][both],     *yield_peak[*t][both][*ds][*ph][DsPhi][*m][*c][*a] );
                 B_yield[*t][both][*ds][*ph][DsPhiSide][*m][*c][*a] = new RooUnblindUniform(Form("B_nsig_DsPhiSide_%s_%s",(*m).c_str(),cat_name.c_str()),  Form("Unblind Yield %s %s",Bmod[DsPhiSide].c_str(), mod[(*m)].c_str()),  "nsigBuDsPhiblindePhiSide",   Blind_number[DsPhiSide][*m][both], *yield_peak[*t][both][*ds][*ph][DsPhiSide][*m][*c][*a] );
+                B_yield[*t][both][*ds][*ph][DsPhiSideWide][*m][*c][*a] = new RooUnblindUniform(Form("B_nsig_DsPhiSideWide_%s_%s",(*m).c_str(),cat_name.c_str()),  Form("Unblind Yield %s %s",Bmod[DsPhiSideWide].c_str(), mod[(*m)].c_str()),  "nsigBuDsPhiblindePhiSide",   Blind_number[DsPhiSideWide][*m][both], *yield_peak[*t][both][*ds][*ph][DsPhiSideWide][*m][*c][*a] );
               } else {
                 B_yield[*t][both][*ds][*ph][DsD0][*m][*c][*a]      = yield_peak[*t][both][*ds][*ph][DsD0][*m][*c][*a];
                 B_yield[*t][both][*ds][*ph][DsPhi][*m][*c][*a]     = yield_peak[*t][both][*ds][*ph][DsPhi][*m][*c][*a];
                 B_yield[*t][both][*ds][*ph][DsPhiSide][*m][*c][*a] = yield_peak[*t][both][*ds][*ph][DsPhiSide][*m][*c][*a];
+                B_yield[*t][both][*ds][*ph][DsPhiSideWide][*m][*c][*a] = yield_peak[*t][both][*ds][*ph][DsPhiSideWide][*m][*c][*a];
               }  
               // Fix yields for helicity split state: Helbin1
               cat_name = Form("%s_%s_%s_%s_%s_%s",(*t).c_str(),Helbin1.c_str(),(*ds).c_str(),(*ph).c_str(),(*c).c_str(),(*a).c_str());
               yield_peak[*t][Helbin1][*ds][*ph][DsD0][*m][*c][*a]      = new RooFormulaVar(Form("yield_peak_%s_%s_%s",DsD0.c_str(),     (*m).c_str(), cat_name.c_str()), Form("Yield %s %s",Bmod[DsD0].c_str(),       mod[(*m)].c_str()),"@0*@1" ,     RooArgList(*splitHel_DsD0_peak_fraction, *yield_peak[*t][both][*ds][*ph][DsD0][*m][*c][*a]));
               yield_peak[*t][Helbin1][*ds][*ph][DsPhi][*m][*c][*a]     = new RooFormulaVar(Form("yield_peak_%s_%s_%s",DsPhi.c_str(),    (*m).c_str(), cat_name.c_str()), Form("Yield %s %s",Bmod[DsPhi].c_str(),      mod[(*m)].c_str()),"@0*@1" ,     RooArgList(*Signal_Helbin1_Fraction,     *yield_peak[*t][both][*ds][*ph][DsPhi][*m][*c][*a]));
               yield_peak[*t][Helbin1][*ds][*ph][DsPhiSide][*m][*c][*a] = new RooFormulaVar(Form("yield_peak_%s_%s_%s",DsPhiSide.c_str(),(*m).c_str(), cat_name.c_str()), Form("Yield %s %s",Bmod[DsPhiSide].c_str(),  mod[(*m)].c_str()),"@0*@1" ,     RooArgList(*Signal_Helbin1_Fraction,     *yield_peak[*t][both][*ds][*ph][DsPhiSide][*m][*c][*a]));
+              yield_peak[*t][Helbin1][*ds][*ph][DsPhiSideWide][*m][*c][*a] = new RooFormulaVar(Form("yield_peak_%s_%s_%s",DsPhiSideWide.c_str(),(*m).c_str(), cat_name.c_str()), Form("Yield %s %s",Bmod[DsPhiSideWide].c_str(),  mod[(*m)].c_str()),"@0*@1" ,     RooArgList(*Signal_Helbin1_Fraction,     *yield_peak[*t][both][*ds][*ph][DsPhiSideWide][*m][*c][*a]));
               // Blinding
               if(needsBlinding){
                 B_yield[*t][Helbin1][*ds][*ph][DsD0][*m][*c][*a]      = yield_peak[*t][Helbin1][*ds][*ph][DsD0][*m][*c][*a];
                 B_yield[*t][Helbin1][*ds][*ph][DsPhi][*m][*c][*a]     = new RooUnblindUniform(Form("B_nsig_DsPhi_%s_%s",    (*m).c_str(),cat_name.c_str()),  Form("Unblind Yield %s %s",Bmod[DsPhi].c_str(),     mod[(*m)].c_str()),  "nsigBuDsPhiblindePhi",       Blind_number[DsPhi][*m][Helbin1],     *yield_peak[*t][Helbin1][*ds][*ph][DsPhi][*m][*c][*a] );
                 B_yield[*t][Helbin1][*ds][*ph][DsPhiSide][*m][*c][*a] = new RooUnblindUniform(Form("B_nsig_DsPhiSide_%s_%s",(*m).c_str(),cat_name.c_str()),  Form("Unblind Yield %s %s",Bmod[DsPhi].c_str(),     mod[(*m)].c_str()),  "nsigBuDsPhiblindePhiSide",   Blind_number[DsPhiSide][*m][Helbin1], *yield_peak[*t][Helbin1][*ds][*ph][DsPhiSide][*m][*c][*a] );
+                B_yield[*t][Helbin1][*ds][*ph][DsPhiSideWide][*m][*c][*a] = new RooUnblindUniform(Form("B_nsig_DsPhiSideWide_%s_%s",(*m).c_str(),cat_name.c_str()),  Form("Unblind Yield %s %s",Bmod[DsPhi].c_str(),     mod[(*m)].c_str()),  "nsigBuDsPhiblindePhiSide",   Blind_number[DsPhiSideWide][*m][Helbin1], *yield_peak[*t][Helbin1][*ds][*ph][DsPhiSideWide][*m][*c][*a] );
               } else {
                 B_yield[*t][Helbin1][*ds][*ph][DsD0][*m][*c][*a]      = yield_peak[*t][Helbin1][*ds][*ph][DsD0][*m][*c][*a];
                 B_yield[*t][Helbin1][*ds][*ph][DsPhi][*m][*c][*a]     = yield_peak[*t][Helbin1][*ds][*ph][DsPhi][*m][*c][*a];
                 B_yield[*t][Helbin1][*ds][*ph][DsPhiSide][*m][*c][*a] = yield_peak[*t][Helbin1][*ds][*ph][DsPhiSide][*m][*c][*a];
+                B_yield[*t][Helbin1][*ds][*ph][DsPhiSideWide][*m][*c][*a] = yield_peak[*t][Helbin1][*ds][*ph][DsPhiSideWide][*m][*c][*a];
               }
               
               // Fix yields for helicity split state: Helbin2
               cat_name = Form("%s_%s_%s_%s_%s_%s",(*t).c_str(),Helbin2.c_str(),(*ds).c_str(),(*ph).c_str(),(*c).c_str(),(*a).c_str());
-              yield_peak[*t][Helbin2][*ds][*ph][DsD0][*m][*c][*a]      = new RooFormulaVar(Form("yield_peak_%s_%s_%s",DsD0.c_str(),     (*m).c_str(), cat_name.c_str()), Form("Yield %s %s",Bmod[DsPhi].c_str(),     mod[(*m)].c_str()),"(1-@0)*@1" ,     RooArgList(*splitHel_DsD0_peak_fraction, *yield_peak[*t][both][*ds][*ph][DsD0][*m][*c][*a]));
+              yield_peak[*t][Helbin2][*ds][*ph][DsD0][*m][*c][*a]      = new RooFormulaVar(Form("yield_peak_%s_%s_%s",DsD0.c_str(),     (*m).c_str(), cat_name.c_str()), Form("Yield %s %s",Bmod[DsD0].c_str(),     mod[(*m)].c_str()),"(1-@0)*@1" ,     RooArgList(*splitHel_DsD0_peak_fraction, *yield_peak[*t][both][*ds][*ph][DsD0][*m][*c][*a]));
               yield_peak[*t][Helbin2][*ds][*ph][DsPhi][*m][*c][*a]     = new RooFormulaVar(Form("yield_peak_%s_%s_%s",DsPhi.c_str(),    (*m).c_str(), cat_name.c_str()), Form("Yield %s %s",Bmod[DsPhi].c_str(),     mod[(*m)].c_str()),"(1-@0)*@1" ,     RooArgList(*Signal_Helbin1_Fraction,     *yield_peak[*t][both][*ds][*ph][DsPhi][*m][*c][*a]));
-              yield_peak[*t][Helbin2][*ds][*ph][DsPhiSide][*m][*c][*a] = new RooFormulaVar(Form("yield_peak_%s_%s_%s",DsPhiSide.c_str(),(*m).c_str(), cat_name.c_str()), Form("Yield %s %s",Bmod[DsPhi].c_str(),     mod[(*m)].c_str()),"(1-@0)*@1" ,     RooArgList(*Signal_Helbin1_Fraction,     *yield_peak[*t][both][*ds][*ph][DsPhiSide][*m][*c][*a]));
+              yield_peak[*t][Helbin2][*ds][*ph][DsPhiSide][*m][*c][*a] = new RooFormulaVar(Form("yield_peak_%s_%s_%s",DsPhiSide.c_str(),(*m).c_str(), cat_name.c_str()), Form("Yield %s %s",Bmod[DsPhiSide].c_str(),     mod[(*m)].c_str()),"(1-@0)*@1" ,     RooArgList(*Signal_Helbin1_Fraction,     *yield_peak[*t][both][*ds][*ph][DsPhiSide][*m][*c][*a]));
+              yield_peak[*t][Helbin2][*ds][*ph][DsPhiSideWide][*m][*c][*a] = new RooFormulaVar(Form("yield_peak_%s_%s_%s",DsPhiSideWide.c_str(),(*m).c_str(), cat_name.c_str()), Form("Yield %s %s",Bmod[DsPhiSideWide].c_str(),     mod[(*m)].c_str()),"(1-@0)*@1" ,     RooArgList(*Signal_Helbin1_Fraction,     *yield_peak[*t][both][*ds][*ph][DsPhiSideWide][*m][*c][*a]));
               
               if(needsBlinding){
                 B_yield[*t][Helbin2][*ds][*ph][DsD0][*m][*c][*a]      = yield_peak[*t][Helbin2][*ds][*ph][DsD0][*m][*c][*a];
                 B_yield[*t][Helbin2][*ds][*ph][DsPhi][*m][*c][*a]     = new RooUnblindUniform(Form("B_nsig_DsPhi_%s_%s",    (*m).c_str(),cat_name.c_str()),  Form("Unblind Yield %s %s",Bmod[DsPhi].c_str(),     mod[(*m)].c_str()),  "nsigBuDsPhiblindePhi",       Blind_number[DsPhi][*m][Helbin2],     *yield_peak[*t][Helbin2][*ds][*ph][DsPhi][*m][*c][*a] );
                 B_yield[*t][Helbin2][*ds][*ph][DsPhiSide][*m][*c][*a] = new RooUnblindUniform(Form("B_nsig_DsPhiSide_%s_%s",(*m).c_str(),cat_name.c_str()),  Form("Unblind Yield %s %s",Bmod[DsPhi].c_str(),     mod[(*m)].c_str()),  "nsigBuDsPhiblindePhiSide",   Blind_number[DsPhiSide][*m][Helbin2], *yield_peak[*t][Helbin2][*ds][*ph][DsPhiSide][*m][*c][*a] );
+                B_yield[*t][Helbin2][*ds][*ph][DsPhiSideWide][*m][*c][*a] = new RooUnblindUniform(Form("B_nsig_DsPhiSideWide_%s_%s",(*m).c_str(),cat_name.c_str()),  Form("Unblind Yield %s %s",Bmod[DsPhiSideWide].c_str(),     mod[(*m)].c_str()),  "nsigBuDsPhiblindePhiSideWide",   Blind_number[DsPhiSideWide][*m][Helbin2], *yield_peak[*t][Helbin2][*ds][*ph][DsPhiSideWide][*m][*c][*a] );
               } else {
                 B_yield[*t][Helbin2][*ds][*ph][DsD0][*m][*c][*a]      = yield_peak[*t][Helbin2][*ds][*ph][DsD0][*m][*c][*a];
                 B_yield[*t][Helbin2][*ds][*ph][DsPhi][*m][*c][*a]     = yield_peak[*t][Helbin2][*ds][*ph][DsPhi][*m][*c][*a];
                 B_yield[*t][Helbin2][*ds][*ph][DsPhiSide][*m][*c][*a] = yield_peak[*t][Helbin2][*ds][*ph][DsPhiSide][*m][*c][*a];
+                B_yield[*t][Helbin2][*ds][*ph][DsPhiSideWide][*m][*c][*a] = yield_peak[*t][Helbin2][*ds][*ph][DsPhiSideWide][*m][*c][*a];
               }   
             //}
 
@@ -1392,6 +1551,7 @@ void DsPhiModel::DefineModel()
               PR_total_yield[*t][both][*ds][*ph][DsD0][*m][*c][*a]      = new RooFormulaVar(Form("yield_PR_total_%s_%s_%s",DsD0.c_str(),      (*m).c_str(), cat_name.c_str()), Form("PR yield %s %s",   Bmod[DsD0].c_str(),     mod[(*m)].c_str()),  "@0",             RooArgList(*Low_Mass_total[*t][both][*ds][*ph][DsD0][*m][*c][*a] ));//;
               PR_total_yield[*t][both][*ds][*ph][DsPhi][*m][*c][*a]     = new RooFormulaVar(Form("yield_PR_total_%s_%s_%s",DsPhi.c_str(),     (*m).c_str(), cat_name.c_str()), Form("PR yield %s %s",   Bmod[DsPhi].c_str(),    mod[(*m)].c_str()),  "@0*@1",          RooArgList(*DsPhi_BG_fraction,*Low_Mass_total[*t][both][*ds][*ph][DsPhi][*m][*c][*a] ));//;
               PR_total_yield[*t][both][*ds][*ph][DsPhiSide][*m][*c][*a] = new RooFormulaVar(Form("yield_PR_total_%s_%s_%s",DsPhiSide.c_str(), (*m).c_str(), cat_name.c_str()), Form("PR yield %s %s",   Bmod[DsPhiSide].c_str(),mod[(*m)].c_str()),  "((1-@0)/@0)*@1", RooArgList(*DsstPhi_DsPhi_Fraction,*PR_total_yield[*t][both][*ds][*ph][DsPhi][*m][*c][*a]));
+              PR_total_yield[*t][both][*ds][*ph][DsPhiSideWide][*m][*c][*a] = new RooFormulaVar(Form("yield_PR_total_%s_%s_%s",DsPhiSideWide.c_str(), (*m).c_str(), cat_name.c_str()), Form("PR yield %s %s",   Bmod[DsPhiSideWide].c_str(),mod[(*m)].c_str()),  "((1-@0)/@0)*@1", RooArgList(*DsstPhi_DsPhi_Fraction,*PR_total_yield[*t][both][*ds][*ph][DsPhi][*m][*c][*a]));
               
               //yield_DsstarDstar0[*t][both][*ds][*ph][DsD0][*m][*c][*a]  = new RooRealVar(   Form("yield_DsstarDstar0_%s_%s_%s",DsD0.c_str(),  (*m).c_str(), cat_name.c_str()), Form("Ds*D*0 yield %s %s",Bmod[DsD0].c_str(),    mod[(*m)].c_str()),  Yield_DsstDst0_input[*m],  0,  1000000);
               yield_DsstarDstar0[*t][both][*ds][*ph][DsD0][*m][*c][*a]  = new RooFormulaVar(Form("yield_DsstarDstar0_%s_%s_%s",DsD0.c_str(),  (*m).c_str(), cat_name.c_str()), Form("Ds*D*0 yield %s %s",Bmod[DsD0].c_str(),    mod[(*m)].c_str()),  "@0*@1",          RooArgList(*Ratio_DsstDst0_to_Lowmass,*Low_Mass_total[*t][both][*ds][*ph][DsD0][*m][*c][*a]));
@@ -1399,19 +1559,34 @@ void DsPhiModel::DefineModel()
 
               yield_Dsa1[*t][both][*ds][*ph][DsPhi][*m][*c][*a]         = new RooFormulaVar(Form("yield_Dsa1_%s_%s_%s",    DsPhi.c_str(),     (*m).c_str(), cat_name.c_str()), Form("Dsa1 yield %s %s", Bmod[DsPhi].c_str(),     mod[(*m)].c_str()),  "(1-@0)*@1" ,    RooArgList(*DsPhi_BG_fraction,*Low_Mass_total[*t][both][*ds][*ph][DsPhi][*m][*c][*a]));
               yield_Dsa1[*t][both][*ds][*ph][DsPhiSide][*m][*c][*a]     = new RooFormulaVar(Form("yield_Dsa1_%s_%s_%s",    DsPhiSide.c_str(), (*m).c_str(), cat_name.c_str()), Form("Dsa1 yield %s %s", Bmod[DsPhiSide].c_str(), mod[(*m)].c_str()),  "((1-@0)/@0)*@1",RooArgList(*Dsa1_DsPhi_Fraction, *yield_Dsa1[*t][both][*ds][*ph][DsPhi][*m][*c][*a])); 
+              yield_Dsa1[*t][both][*ds][*ph][DsPhiSideWide][*m][*c][*a]     = new RooFormulaVar(Form("yield_Dsa1_%s_%s_%s",    DsPhiSideWide.c_str(), (*m).c_str(), cat_name.c_str()), Form("Dsa1 yield %s %s", Bmod[DsPhiSideWide].c_str(), mod[(*m)].c_str()),  "((1-@0)/@0)*@1",RooArgList(*Dsa1_DsPhi_Fraction, *yield_Dsa1[*t][both][*ds][*ph][DsPhi][*m][*c][*a])); 
               
+
+              yield_DsKK[*t][both][*ds][*ph][DsPhi][*m][*c][*a]         = new RooFormulaVar(Form("yield_DsKK_%s_%s_%s",  DsPhi.c_str(),         (*m).c_str(), cat_name.c_str()), Form("DsKK yield %s %s", Bmod[DsPhi].c_str(),         mod[(*m)].c_str()),  "(@0+@1)*@2", RooArgList(*DsKK_DsPhi_H1_Fraction,     *DsKK_DsPhi_H2_Fraction,     *DsKK_total[*t][both][*ds][*ph][DsPhi][*m][*c][*a]));
+              yield_DsKK[*t][both][*ds][*ph][DsPhiSide][*m][*c][*a]     = new RooFormulaVar(Form("yield_DsKK_%s_%s_%s",  DsPhiSide.c_str(),     (*m).c_str(), cat_name.c_str()), Form("DsKK yield %s %s", Bmod[DsPhiSide].c_str(),     mod[(*m)].c_str()),  "(@0+@1)*@2", RooArgList(*DsKK_DsPhiSide_H1_Fraction, *DsKK_DsPhiSide_H2_Fraction, *DsKK_total[*t][both][*ds][*ph][DsPhi][*m][*c][*a]));
+              yield_DsKK[*t][both][*ds][*ph][DsPhiSideWide][*m][*c][*a] = new RooFormulaVar(Form("yield_DsKK_%s_%s_%s",  DsPhiSideWide.c_str(), (*m).c_str(), cat_name.c_str()), Form("DsKK yield %s %s", Bmod[DsPhiSideWide].c_str(), mod[(*m)].c_str()),  "(@0+@1)*@2", RooArgList(*DsKK_DsPhiSide_H1_Fraction, *DsKK_DsPhiSide_H2_Fraction, *DsKK_total[*t][both][*ds][*ph][DsPhi][*m][*c][*a]));
+              
+              //yield_DsKK[*t][both][*ds][*ph][DsPhi][*m][*c][*a]         = new RooFormulaVar(Form("yield_DsKK_%s_%s_%s",  DsPhi.c_str(),         (*m).c_str(), cat_name.c_str()), Form("DsKK yield %s %s", Bmod[DsPhi].c_str(),         mod[(*m)].c_str()),  "@0*@1",    RooArgList(*DsKK_DsPhi_Fraction,*DsKK_total[*t][both][*ds][*ph][DsPhi][*m][*c][*a]));
+              //yield_DsKK[*t][both][*ds][*ph][DsPhiSide][*m][*c][*a]     = new RooFormulaVar(Form("yield_DsKK_%s_%s_%s",  DsPhiSide.c_str(),     (*m).c_str(), cat_name.c_str()), Form("DsKK yield %s %s", Bmod[DsPhiSide].c_str(),     mod[(*m)].c_str()),  "(1-@0)*@1",RooArgList(*DsKK_DsPhi_Fraction,*DsKK_total[*t][both][*ds][*ph][DsPhi][*m][*c][*a]));
+              //yield_DsKK[*t][both][*ds][*ph][DsPhiSideWide][*m][*c][*a] = new RooFormulaVar(Form("yield_DsKK_%s_%s_%s",  DsPhiSideWide.c_str(), (*m).c_str(), cat_name.c_str()), Form("DsKK yield %s %s", Bmod[DsPhiSideWide].c_str(), mod[(*m)].c_str()),  "(1-@0)*@1",RooArgList(*DsKK_DsPhi_Fraction,*DsKK_total[*t][both][*ds][*ph][DsPhi][*m][*c][*a]));
+              
+                            
+
               yield_dsstKK[*t][both][*ds][*ph][DsPhi][*m][*c][*a]       = new RooRealVar(   Form("yield_dsstKK_%s_%s_%s",  DsPhi.c_str(),     (*m).c_str(), cat_name.c_str()), Form("DsstKK yield %s %s", Bmod[DsPhi].c_str(),     mod[(*m)].c_str()),  150, 0,  1000000);
               yield_dsstKK[*t][both][*ds][*ph][DsPhiSide][*m][*c][*a]   = new RooFormulaVar(Form("yield_dsstKK_%s_%s_%s",  DsPhiSide.c_str(), (*m).c_str(), cat_name.c_str()), Form("DsstKK yield %s %s", Bmod[DsPhiSide].c_str(), mod[(*m)].c_str()),  "((1-@0)/@0)*@1",   RooArgList(*DsstKK_DsPhi_Fraction,*yield_dsstKK[*t][both][*ds][*ph][DsPhi][*m][*c][*a]));
+              yield_dsstKK[*t][both][*ds][*ph][DsPhiSideWide][*m][*c][*a]   = new RooFormulaVar(Form("yield_dsstKK_%s_%s_%s",  DsPhiSideWide.c_str(), (*m).c_str(), cat_name.c_str()), Form("DsstKK yield %s %s", Bmod[DsPhiSideWide].c_str(), mod[(*m)].c_str()),  "((1-@0)/@0)*@1",   RooArgList(*DsstKK_DsPhi_Fraction,*yield_dsstKK[*t][both][*ds][*ph][DsPhi][*m][*c][*a]));
               
               //yield_DsD[*t][both][*ds][*ph][DsPhi][*m][*c][*a]          = new RooRealVar(   Form("yield_DsD_%s_%s_%s",     DsPhi.c_str(),     (*m).c_str(), cat_name.c_str()), Form("DsD yield %s %s",  Bmod[DsPhi].c_str(),     mod[(*m)].c_str()),  150, 0,  1000000);
               //yield_DsD[*t][both][*ds][*ph][DsPhiSide][*m][*c][*a]      = new RooFormulaVar(Form("yield_DsD_%s_%s_%s",     DsPhiSide.c_str(), (*m).c_str(), cat_name.c_str()), Form("DsD yield %s %s",  Bmod[DsPhiSide].c_str(), mod[(*m)].c_str()),  "((1-@0)/@0)*@1",   RooArgList(*DsD_DsPhi_Fraction,*yield_DsD[*t][both][*ds][*ph][DsPhi][*m][*c][*a]));
               yield_DsD[*t][both][*ds][*ph][DsPhi][*m][*c][*a]          = new RooFormulaVar(Form("yield_DsD_%s_%s_%s",     DsPhi.c_str(),     (*m).c_str(), cat_name.c_str()), Form("DsD yield %s %s",  Bmod[DsPhi].c_str(),     mod[(*m)].c_str()),  "@0*@1",               RooArgList(*Ratio_DsD_to_Dsa1, *Low_Mass_total[*t][both][*ds][*ph][DsPhi][*m][*c][*a]));
               yield_DsD[*t][both][*ds][*ph][DsPhiSide][*m][*c][*a]      = new RooFormulaVar(Form("yield_DsD_%s_%s_%s",     DsPhiSide.c_str(), (*m).c_str(), cat_name.c_str()), Form("DsD yield %s %s",  Bmod[DsPhiSide].c_str(), mod[(*m)].c_str()),  "@0*((@1+@2)/(@3+@4))",RooArgList(*yield_DsD[*t][both][*ds][*ph][DsPhi][*m][*c][*a],*DsD_DsPhiSide_H1_Fraction,*DsD_DsPhiSide_H2_Fraction,*DsD_DsPhi_H1_Fraction,*DsD_DsPhi_H2_Fraction));
+              yield_DsD[*t][both][*ds][*ph][DsPhiSideWide][*m][*c][*a]      = new RooFormulaVar(Form("yield_DsD_%s_%s_%s",     DsPhiSideWide.c_str(), (*m).c_str(), cat_name.c_str()), Form("DsD yield %s %s",  Bmod[DsPhiSideWide].c_str(), mod[(*m)].c_str()),  "@0*((@1+@2)/(@3+@4))",RooArgList(*yield_DsD[*t][both][*ds][*ph][DsPhi][*m][*c][*a],*DsD_DsPhiSide_H1_Fraction,*DsD_DsPhiSide_H2_Fraction,*DsD_DsPhi_H1_Fraction,*DsD_DsPhi_H2_Fraction));
               
 
               //yield_DD[*t][both][*ds][*ph][DsPhi][*m][*c][*a]           = new RooRealVar(   Form("yield_DD_total_%s_%s_%s",DsPhi.c_str(),     (*m).c_str(), cat_name.c_str()), Form("DD yield %s %s",  Bmod[DsPhi].c_str(),     mod[(*m)].c_str()),  Yield_DD_input[*m] , 0,  1000000);
               yield_DD[*t][both][*ds][*ph][DsPhi][*m][*c][*a]           = new RooFormulaVar(Form("yield_DD_total_%s_%s_%s",DsPhi.c_str(),     (*m).c_str(), cat_name.c_str()), Form("DD yield %s %s",  Bmod[DsPhi].c_str(),     mod[(*m)].c_str()),  "@0*@1",               RooArgList(*Ratio_DD_to_Dsa1, *Low_Mass_total[*t][both][*ds][*ph][DsPhi][*m][*c][*a]));
               yield_DD[*t][both][*ds][*ph][DsPhiSide][*m][*c][*a]       = new RooFormulaVar(Form("yield_DD_total_%s_%s_%s",DsPhiSide.c_str(), (*m).c_str(), cat_name.c_str()), Form("DD yield %s %s",  Bmod[DsPhiSide].c_str(), mod[(*m)].c_str()),  "@0*((@1+@2)/(@3+@4))",RooArgList(*yield_DD[*t][both][*ds][*ph][DsPhi][*m][*c][*a],*DD_DsPhiSide_H1_Fraction,*DD_DsPhiSide_H2_Fraction,*DD_DsPhi_H1_Fraction,*DD_DsPhi_H2_Fraction));
+              yield_DD[*t][both][*ds][*ph][DsPhiSideWide][*m][*c][*a]       = new RooFormulaVar(Form("yield_DD_total_%s_%s_%s",DsPhiSideWide.c_str(), (*m).c_str(), cat_name.c_str()), Form("DD yield %s %s",  Bmod[DsPhiSideWide].c_str(), mod[(*m)].c_str()),  "@0*((@1+@2)/(@3+@4))",RooArgList(*yield_DD[*t][both][*ds][*ph][DsPhi][*m][*c][*a],*DD_DsPhiSide_H1_Fraction,*DD_DsPhiSide_H2_Fraction,*DD_DsPhi_H1_Fraction,*DD_DsPhi_H2_Fraction));
               //if(allConst_exYield) ((RooRealVar*)yield_DD[*t][both][*ds][*ph][DsPhi][*m][*c][*a])->setConstant();
 
               // Helbin 1
@@ -1421,24 +1596,39 @@ void DsPhiModel::DefineModel()
               //PR_total_yield[*t][Helbin1][*ds][*ph][DsPhiSide][*m][*c][*a] = new RooFormulaVar(Form("yield_PR_total_%s_%s_%s",DsPhiSide.c_str(), (*m).c_str(), cat_name.c_str()), Form("PR yield %s %s",   Bmod[DsPhiSide].c_str(),mod[(*m)].c_str()),  "@0*@1", RooArgList(*splitHel_DsstPhi_peak_fraction,*PR_total_yield[*t][both][*ds][*ph][DsPhiSide][*m][*c][*a]));
               PR_total_yield[*t][Helbin1][*ds][*ph][DsPhi][*m][*c][*a]     = new RooFormulaVar(Form("yield_PR_total_%s_%s_%s",DsPhi.c_str(),     (*m).c_str(), cat_name.c_str()), Form("PR yield %s %s",   Bmod[DsPhi].c_str(),    mod[(*m)].c_str()),  "@0*@1", RooArgList(*DsstPhi_Helbin1_frac,*PR_total_yield[*t][both][*ds][*ph][DsPhi][*m][*c][*a]));
               PR_total_yield[*t][Helbin1][*ds][*ph][DsPhiSide][*m][*c][*a] = new RooFormulaVar(Form("yield_PR_total_%s_%s_%s",DsPhiSide.c_str(), (*m).c_str(), cat_name.c_str()), Form("PR yield %s %s",   Bmod[DsPhiSide].c_str(),mod[(*m)].c_str()),  "@0*@1", RooArgList(*DsstPhi_Helbin1_frac,*PR_total_yield[*t][both][*ds][*ph][DsPhiSide][*m][*c][*a]));
+              PR_total_yield[*t][Helbin1][*ds][*ph][DsPhiSideWide][*m][*c][*a] = new RooFormulaVar(Form("yield_PR_total_%s_%s_%s",DsPhiSideWide.c_str(), (*m).c_str(), cat_name.c_str()), Form("PR yield %s %s",   Bmod[DsPhiSideWide].c_str(),mod[(*m)].c_str()),  "@0*@1", RooArgList(*DsstPhi_Helbin1_frac,*PR_total_yield[*t][both][*ds][*ph][DsPhiSideWide][*m][*c][*a]));
                
               yield_DsstarDstar0[*t][Helbin1][*ds][*ph][DsD0][*m][*c][*a]  = new RooFormulaVar(Form("yield_DsstarDstar0_%s_%s_%s",DsD0.c_str(),  (*m).c_str(), cat_name.c_str()), Form("Ds*D*0 yield %s %s",Bmod[DsD0].c_str(),    mod[(*m)].c_str()),  "@0*@1" ,RooArgList(*splitHel_DsD0_PR_peak_fraction,*yield_DsstarDstar0[*t][both][*ds][*ph][DsD0][*m][*c][*a]));
 
 
-              yield_Dsa1[*t][Helbin1][*ds][*ph][DsPhi][*m][*c][*a]         = new RooFormulaVar(Form("yield_Dsa1_%s_%s_%s",    DsPhi.c_str(),     (*m).c_str(), cat_name.c_str()), Form("Dsa1 yield %s %s", Bmod[DsPhi].c_str(),     mod[(*m)].c_str()),  "@0*@1",RooArgList(*splitHel_Dsa1_peak_fraction, *yield_Dsa1[*t][both][*ds][*ph][DsPhi][*m][*c][*a] ));
-              yield_Dsa1[*t][Helbin1][*ds][*ph][DsPhiSide][*m][*c][*a]     = new RooFormulaVar(Form("yield_Dsa1_%s_%s_%s",    DsPhiSide.c_str(), (*m).c_str(), cat_name.c_str()), Form("Dsa1 yield %s %s", Bmod[DsPhiSide].c_str(), mod[(*m)].c_str()),  "@0*@1",RooArgList(*splitHel_Dsa1_peak_fraction, *yield_Dsa1[*t][both][*ds][*ph][DsPhiSide][*m][*c][*a])); 
+              yield_Dsa1[*t][Helbin1][*ds][*ph][DsPhi][*m][*c][*a]             = new RooFormulaVar(Form("yield_Dsa1_%s_%s_%s",    DsPhi.c_str(),     (*m).c_str(), cat_name.c_str()), Form("Dsa1 yield %s %s", Bmod[DsPhi].c_str(),     mod[(*m)].c_str()),  "@0*@1",RooArgList(*splitHel_Dsa1_peak_fraction, *yield_Dsa1[*t][both][*ds][*ph][DsPhi][*m][*c][*a] ));
+              yield_Dsa1[*t][Helbin1][*ds][*ph][DsPhiSide][*m][*c][*a]         = new RooFormulaVar(Form("yield_Dsa1_%s_%s_%s",    DsPhiSide.c_str(), (*m).c_str(), cat_name.c_str()), Form("Dsa1 yield %s %s", Bmod[DsPhiSide].c_str(), mod[(*m)].c_str()),  "@0*@1",RooArgList(*splitHel_Dsa1_peak_fraction, *yield_Dsa1[*t][both][*ds][*ph][DsPhiSide][*m][*c][*a])); 
+              yield_Dsa1[*t][Helbin1][*ds][*ph][DsPhiSideWide][*m][*c][*a]     = new RooFormulaVar(Form("yield_Dsa1_%s_%s_%s",    DsPhiSideWide.c_str(), (*m).c_str(), cat_name.c_str()), Form("Dsa1 yield %s %s", Bmod[DsPhiSideWide].c_str(), mod[(*m)].c_str()),  "@0*@1",RooArgList(*splitHel_Dsa1_peak_fraction, *yield_Dsa1[*t][both][*ds][*ph][DsPhiSideWide][*m][*c][*a])); 
               
+              yield_DsKK[*t][Helbin1][*ds][*ph][DsPhi][*m][*c][*a]           = new RooFormulaVar(Form("yield_DsKK_%s_%s_%s",  DsPhi.c_str(),         (*m).c_str(), cat_name.c_str()), Form("DsstKK yield %s %s",Bmod[DsPhi].c_str(),        mod[(*m)].c_str()),  "@0*@1",   RooArgList(*DsKK_DsPhi_H1_Fraction,     *DsKK_total[*t][both][*ds][*ph][DsPhi][*m][*c][*a]));
+              yield_DsKK[*t][Helbin1][*ds][*ph][DsPhiSide][*m][*c][*a]       = new RooFormulaVar(Form("yield_DsKK_%s_%s_%s",  DsPhiSide.c_str(),     (*m).c_str(), cat_name.c_str()), Form("DsstKK yield %s %s",Bmod[DsPhiSide].c_str(),    mod[(*m)].c_str()),  "@0*@1",   RooArgList(*DsKK_DsPhiSide_H1_Fraction, *DsKK_total[*t][both][*ds][*ph][DsPhi][*m][*c][*a]));
+              yield_DsKK[*t][Helbin1][*ds][*ph][DsPhiSideWide][*m][*c][*a]   = new RooFormulaVar(Form("yield_DsKK_%s_%s_%s",  DsPhiSideWide.c_str(), (*m).c_str(), cat_name.c_str()), Form("DsstKK yield %s %s",Bmod[DsPhiSideWide].c_str(),mod[(*m)].c_str()),  "@0*@1",   RooArgList(*DsKK_DsPhiSide_H1_Fraction, *DsKK_total[*t][both][*ds][*ph][DsPhi][*m][*c][*a]));
+              
+              //yield_DsKK[*t][Helbin1][*ds][*ph][DsPhi][*m][*c][*a]           = new RooFormulaVar(Form("yield_DsKK_%s_%s_%s",  DsPhi.c_str(),     (*m).c_str(), cat_name.c_str()), Form("DsstKK yield %s %s",Bmod[DsPhi].c_str(),    mod[(*m)].c_str()),  "@0*@1",   RooArgList(*DsKK_Helbin1_Fraction,    *yield_DsKK[*t][both][*ds][*ph][DsPhi][*m][*c][*a]));
+              //yield_DsKK[*t][Helbin1][*ds][*ph][DsPhiSide][*m][*c][*a]       = new RooFormulaVar(Form("yield_DsKK_%s_%s_%s",  DsPhiSide.c_str(), (*m).c_str(), cat_name.c_str()), Form("DsstKK yield %s %s",Bmod[DsPhiSide].c_str(),mod[(*m)].c_str()),  "@0*@1",   RooArgList(*DsKK_Helbin1_Fraction,    *yield_DsKK[*t][both][*ds][*ph][DsPhiSide][*m][*c][*a]));
+              //yield_DsKK[*t][Helbin1][*ds][*ph][DsPhiSideWide][*m][*c][*a]   = new RooFormulaVar(Form("yield_DsKK_%s_%s_%s",  DsPhiSideWide.c_str(), (*m).c_str(), cat_name.c_str()), Form("DsstKK yield %s %s",Bmod[DsPhiSideWide].c_str(),mod[(*m)].c_str()),  "@0*@1",   RooArgList(*DsKK_Helbin1_Fraction,    *yield_DsKK[*t][both][*ds][*ph][DsPhiSideWide][*m][*c][*a]));
+              
+              
+
               yield_dsstKK[*t][Helbin1][*ds][*ph][DsPhi][*m][*c][*a]       = new RooFormulaVar(Form("yield_dsstKK_%s_%s_%s",  DsPhi.c_str(),     (*m).c_str(), cat_name.c_str()), Form("DsstKK yield %s %s",Bmod[DsPhi].c_str(),    mod[(*m)].c_str()),  "@0*@1",   RooArgList(*DsstKK_Helbin1_Fraction,    *yield_dsstKK[*t][both][*ds][*ph][DsPhi][*m][*c][*a]));
               yield_dsstKK[*t][Helbin1][*ds][*ph][DsPhiSide][*m][*c][*a]   = new RooFormulaVar(Form("yield_dsstKK_%s_%s_%s",  DsPhiSide.c_str(), (*m).c_str(), cat_name.c_str()), Form("DsstKK yield %s %s",Bmod[DsPhiSide].c_str(),mod[(*m)].c_str()),  "@0*@1",   RooArgList(*DsstKK_Helbin1_Fraction,    *yield_dsstKK[*t][both][*ds][*ph][DsPhiSide][*m][*c][*a]));
+              yield_dsstKK[*t][Helbin1][*ds][*ph][DsPhiSideWide][*m][*c][*a]   = new RooFormulaVar(Form("yield_dsstKK_%s_%s_%s",  DsPhiSideWide.c_str(), (*m).c_str(), cat_name.c_str()), Form("DsstKK yield %s %s",Bmod[DsPhiSideWide].c_str(),mod[(*m)].c_str()),  "@0*@1",   RooArgList(*DsstKK_Helbin1_Fraction,    *yield_dsstKK[*t][both][*ds][*ph][DsPhiSideWide][*m][*c][*a]));
               
               //yield_DsD[*t][Helbin1][*ds][*ph][DsPhi][*m][*c][*a]          = new RooFormulaVar(Form("yield_DsD_%s_%s_%s",     DsPhi.c_str(),     (*m).c_str(), cat_name.c_str()), Form("DsD yield %s %s",  Bmod[DsPhi].c_str(),    mod[(*m)].c_str()),  "@0*@1",   RooArgList(*DsD_Helbin1_Fraction,    *yield_DsD[*t][both][*ds][*ph][DsPhi][*m][*c][*a]));
               //yield_DsD[*t][Helbin1][*ds][*ph][DsPhiSide][*m][*c][*a]      = new RooFormulaVar(Form("yield_DsD_%s_%s_%s",     DsPhiSide.c_str(), (*m).c_str(), cat_name.c_str()), Form("DsD yield %s %s",  Bmod[DsPhiSide].c_str(),mod[(*m)].c_str()),  "@0*@1",   RooArgList(*DsD_Helbin1_Fraction,    *yield_DsD[*t][both][*ds][*ph][DsPhiSide][*m][*c][*a]));
               yield_DsD[*t][Helbin1][*ds][*ph][DsPhi][*m][*c][*a]          = new RooFormulaVar(Form("yield_DsD_%s_%s_%s",     DsPhi.c_str(),     (*m).c_str(), cat_name.c_str()), Form("DsD yield %s %s",  Bmod[DsPhi].c_str(),    mod[(*m)].c_str()),  "@0*@1",     RooArgList(*Ratio_DsD_to_Dsa1,*Low_Mass_total[*t][both][*ds][*ph][DsPhi][*m][*c][*a]));
               yield_DsD[*t][Helbin1][*ds][*ph][DsPhiSide][*m][*c][*a]      = new RooFormulaVar(Form("yield_DsD_%s_%s_%s",     DsPhiSide.c_str(), (*m).c_str(), cat_name.c_str()), Form("DsD yield %s %s",  Bmod[DsPhiSide].c_str(),mod[(*m)].c_str()),  "@0*(@1/@2)",RooArgList(*yield_DsD[*t][Helbin1][*ds][*ph][DsPhi][*m][*c][*a],*DsD_DsPhiSide_H1_Fraction,*DsD_DsPhi_H1_Fraction));
+              yield_DsD[*t][Helbin1][*ds][*ph][DsPhiSide][*m][*c][*a]      = new RooFormulaVar(Form("yield_DsD_%s_%s_%s",     DsPhiSideWide.c_str(), (*m).c_str(), cat_name.c_str()), Form("DsD yield %s %s",  Bmod[DsPhiSideWide].c_str(),mod[(*m)].c_str()),  "@0*(@1/@2)",RooArgList(*yield_DsD[*t][Helbin1][*ds][*ph][DsPhi][*m][*c][*a],*DsD_DsPhiSide_H1_Fraction,*DsD_DsPhi_H1_Fraction));
               
               //yield_DD[*t][Helbin1][*ds][*ph][DsPhi][*m][*c][*a]           = new RooRealVar(   Form("yield_DD_total_%s_%s_%s",DsPhi.c_str(),     (*m).c_str(), cat_name.c_str()), Form("DD yield %s %s",  Bmod[DsPhi].c_str(),     mod[(*m)].c_str()),  Yield_DD_input[*m] , 0,  1000000);
               yield_DD[*t][Helbin1][*ds][*ph][DsPhi][*m][*c][*a]           = new RooFormulaVar(Form("yield_DD_total_%s_%s_%s",DsPhi.c_str(),     (*m).c_str(), cat_name.c_str()), Form("DD yield %s %s",  Bmod[DsPhi].c_str(),     mod[(*m)].c_str()),  "@0*@1",     RooArgList(*Ratio_DD_to_Dsa1,*Low_Mass_total[*t][both][*ds][*ph][DsPhi][*m][*c][*a]));
               yield_DD[*t][Helbin1][*ds][*ph][DsPhiSide][*m][*c][*a]       = new RooFormulaVar(Form("yield_DD_total_%s_%s_%s",DsPhiSide.c_str(), (*m).c_str(), cat_name.c_str()), Form("DD yield %s %s",  Bmod[DsPhiSide].c_str(), mod[(*m)].c_str()),  "@0*(@1/@2)",RooArgList(*yield_DD[*t][Helbin1][*ds][*ph][DsPhi][*m][*c][*a],*DD_DsPhiSide_H1_Fraction,*DD_DsPhi_H1_Fraction));
+              yield_DD[*t][Helbin1][*ds][*ph][DsPhiSideWide][*m][*c][*a]       = new RooFormulaVar(Form("yield_DD_total_%s_%s_%s",DsPhiSideWide.c_str(), (*m).c_str(), cat_name.c_str()), Form("DD yield %s %s",  Bmod[DsPhiSideWide].c_str(), mod[(*m)].c_str()),  "@0*(@1/@2)",RooArgList(*yield_DD[*t][Helbin1][*ds][*ph][DsPhi][*m][*c][*a],*DD_DsPhiSide_H1_Fraction,*DD_DsPhi_H1_Fraction));
               //if(allConst_exYield) ((RooRealVar*)yield_DD[*t][Helbin1][*ds][*ph][DsPhi][*m][*c][*a])->setConstant();
 
               // Helbin 2
@@ -1448,22 +1638,35 @@ void DsPhiModel::DefineModel()
               //PR_total_yield[*t][Helbin2][*ds][*ph][DsPhiSide][*m][*c][*a] = new RooFormulaVar(Form("yield_PR_total_%s_%s_%s",DsPhiSide.c_str(), (*m).c_str(), cat_name.c_str()), Form("PR yield %s %s",   Bmod[DsPhiSide].c_str(),mod[(*m)].c_str()),  "(1-@0)*@1", RooArgList(*splitHel_DsstPhi_peak_fraction,*PR_total_yield[*t][both][*ds][*ph][DsPhiSide][*m][*c][*a]));
               PR_total_yield[*t][Helbin2][*ds][*ph][DsPhi][*m][*c][*a]     = new RooFormulaVar(Form("yield_PR_total_%s_%s_%s",DsPhi.c_str(),     (*m).c_str(), cat_name.c_str()), Form("PR yield %s %s",   Bmod[DsPhi].c_str(),    mod[(*m)].c_str()),  "(1-@0)*@1", RooArgList(*DsstPhi_Helbin1_frac,*PR_total_yield[*t][both][*ds][*ph][DsPhi][*m][*c][*a]));
               PR_total_yield[*t][Helbin2][*ds][*ph][DsPhiSide][*m][*c][*a] = new RooFormulaVar(Form("yield_PR_total_%s_%s_%s",DsPhiSide.c_str(), (*m).c_str(), cat_name.c_str()), Form("PR yield %s %s",   Bmod[DsPhiSide].c_str(),mod[(*m)].c_str()),  "(1-@0)*@1", RooArgList(*DsstPhi_Helbin1_frac,*PR_total_yield[*t][both][*ds][*ph][DsPhiSide][*m][*c][*a]));
+              PR_total_yield[*t][Helbin2][*ds][*ph][DsPhiSideWide][*m][*c][*a] = new RooFormulaVar(Form("yield_PR_total_%s_%s_%s",DsPhiSideWide.c_str(), (*m).c_str(), cat_name.c_str()), Form("PR yield %s %s",   Bmod[DsPhiSideWide].c_str(),mod[(*m)].c_str()),  "(1-@0)*@1", RooArgList(*DsstPhi_Helbin1_frac,*PR_total_yield[*t][both][*ds][*ph][DsPhiSide][*m][*c][*a]));
               
               yield_DsstarDstar0[*t][Helbin2][*ds][*ph][DsD0][*m][*c][*a]  = new RooFormulaVar(Form("yield_DsstarDstar0_%s_%s_%s",DsD0.c_str(),  (*m).c_str(), cat_name.c_str()), Form("Ds*D*0 yield %s %s",Bmod[DsD0].c_str(),    mod[(*m)].c_str()),  "(1-@0)*@1" ,RooArgList(*splitHel_DsD0_PR_peak_fraction,*yield_DsstarDstar0[*t][both][*ds][*ph][DsD0][*m][*c][*a]));
 
               yield_Dsa1[*t][Helbin2][*ds][*ph][DsPhi][*m][*c][*a]         = new RooFormulaVar(Form("yield_Dsa1_%s_%s_%s",    DsPhi.c_str(),     (*m).c_str(), cat_name.c_str()), Form("Dsa1 yield %s %s", Bmod[DsPhi].c_str(),     mod[(*m)].c_str()),  "(1-@0)*@1",RooArgList(*splitHel_Dsa1_peak_fraction, *yield_Dsa1[*t][both][*ds][*ph][DsPhi][*m][*c][*a] ));
               yield_Dsa1[*t][Helbin2][*ds][*ph][DsPhiSide][*m][*c][*a]     = new RooFormulaVar(Form("yield_Dsa1_%s_%s_%s",    DsPhiSide.c_str(), (*m).c_str(), cat_name.c_str()), Form("Dsa1 yield %s %s", Bmod[DsPhiSide].c_str(), mod[(*m)].c_str()),  "(1-@0)*@1",RooArgList(*splitHel_Dsa1_peak_fraction, *yield_Dsa1[*t][both][*ds][*ph][DsPhiSide][*m][*c][*a])); 
+              yield_Dsa1[*t][Helbin2][*ds][*ph][DsPhiSideWide][*m][*c][*a]     = new RooFormulaVar(Form("yield_Dsa1_%s_%s_%s",    DsPhiSideWide.c_str(), (*m).c_str(), cat_name.c_str()), Form("Dsa1 yield %s %s", Bmod[DsPhiSideWide].c_str(), mod[(*m)].c_str()),  "(1-@0)*@1",RooArgList(*splitHel_Dsa1_peak_fraction, *yield_Dsa1[*t][both][*ds][*ph][DsPhiSideWide][*m][*c][*a])); 
          
+              yield_DsKK[*t][Helbin2][*ds][*ph][DsPhi][*m][*c][*a]           = new RooFormulaVar(Form("yield_DsKK_%s_%s_%s",  DsPhi.c_str(),         (*m).c_str(), cat_name.c_str()), Form("DsstKK yield %s %s",Bmod[DsPhi].c_str(),        mod[(*m)].c_str()),  "@0*@1",   RooArgList(*DsKK_DsPhi_H2_Fraction,     *DsKK_total[*t][both][*ds][*ph][DsPhi][*m][*c][*a]));
+              yield_DsKK[*t][Helbin2][*ds][*ph][DsPhiSide][*m][*c][*a]       = new RooFormulaVar(Form("yield_DsKK_%s_%s_%s",  DsPhiSide.c_str(),     (*m).c_str(), cat_name.c_str()), Form("DsstKK yield %s %s",Bmod[DsPhiSide].c_str(),    mod[(*m)].c_str()),  "@0*@1",   RooArgList(*DsKK_DsPhiSide_H2_Fraction, *DsKK_total[*t][both][*ds][*ph][DsPhi][*m][*c][*a]));     
+              yield_DsKK[*t][Helbin2][*ds][*ph][DsPhiSideWide][*m][*c][*a]   = new RooFormulaVar(Form("yield_DsKK_%s_%s_%s",  DsPhiSideWide.c_str(), (*m).c_str(), cat_name.c_str()), Form("DsstKK yield %s %s",Bmod[DsPhiSideWide].c_str(),mod[(*m)].c_str()),  "@0*@1",   RooArgList(*DsKK_DsPhiSide_H2_Fraction, *DsKK_total[*t][both][*ds][*ph][DsPhi][*m][*c][*a]));     
+              
+              //yield_DsKK[*t][Helbin2][*ds][*ph][DsPhi][*m][*c][*a]       = new RooFormulaVar(Form("yield_DsKK_%s_%s_%s",  DsPhi.c_str(),     (*m).c_str(), cat_name.c_str()), Form("DsstKK yield %s %s",Bmod[DsPhi].c_str(),    mod[(*m)].c_str()),  "(1-@0)*@1",   RooArgList(*DsKK_Helbin1_Fraction,    *yield_DsKK[*t][both][*ds][*ph][DsPhi][*m][*c][*a]));
+              //yield_DsKK[*t][Helbin2][*ds][*ph][DsPhiSide][*m][*c][*a]   = new RooFormulaVar(Form("yield_DsKK_%s_%s_%s",  DsPhiSide.c_str(), (*m).c_str(), cat_name.c_str()), Form("DsstKK yield %s %s",Bmod[DsPhiSide].c_str(),mod[(*m)].c_str()),  "(1-@0)*@1",   RooArgList(*DsKK_Helbin1_Fraction,    *yield_DsKK[*t][both][*ds][*ph][DsPhiSide][*m][*c][*a]));     
+              //yield_DsKK[*t][Helbin2][*ds][*ph][DsPhiSideWide][*m][*c][*a]   = new RooFormulaVar(Form("yield_DsKK_%s_%s_%s",  DsPhiSideWide.c_str(), (*m).c_str(), cat_name.c_str()), Form("DsstKK yield %s %s",Bmod[DsPhiSideWide].c_str(),mod[(*m)].c_str()),  "(1-@0)*@1",   RooArgList(*DsKK_Helbin1_Fraction,    *yield_DsKK[*t][both][*ds][*ph][DsPhiSideWide][*m][*c][*a]));     
+              
               yield_dsstKK[*t][Helbin2][*ds][*ph][DsPhi][*m][*c][*a]       = new RooFormulaVar(Form("yield_dsstKK_%s_%s_%s",  DsPhi.c_str(),     (*m).c_str(), cat_name.c_str()), Form("DsstKK yield %s %s",Bmod[DsPhi].c_str(),    mod[(*m)].c_str()),  "(1-@0)*@1",   RooArgList(*DsstKK_Helbin1_Fraction,    *yield_dsstKK[*t][both][*ds][*ph][DsPhi][*m][*c][*a]));
               yield_dsstKK[*t][Helbin2][*ds][*ph][DsPhiSide][*m][*c][*a]   = new RooFormulaVar(Form("yield_dsstKK_%s_%s_%s",  DsPhiSide.c_str(), (*m).c_str(), cat_name.c_str()), Form("DsstKK yield %s %s",Bmod[DsPhiSide].c_str(),mod[(*m)].c_str()),  "(1-@0)*@1",   RooArgList(*DsstKK_Helbin1_Fraction,    *yield_dsstKK[*t][both][*ds][*ph][DsPhiSide][*m][*c][*a]));     
+              yield_dsstKK[*t][Helbin2][*ds][*ph][DsPhiSideWide][*m][*c][*a]   = new RooFormulaVar(Form("yield_dsstKK_%s_%s_%s",  DsPhiSideWide.c_str(), (*m).c_str(), cat_name.c_str()), Form("DsstKK yield %s %s",Bmod[DsPhiSideWide].c_str(),mod[(*m)].c_str()),  "(1-@0)*@1",   RooArgList(*DsstKK_Helbin1_Fraction,    *yield_dsstKK[*t][both][*ds][*ph][DsPhiSideWide][*m][*c][*a]));     
               
               //yield_DsD[*t][Helbin2][*ds][*ph][DsPhi][*m][*c][*a]          = new RooFormulaVar(Form("yield_DsD_%s_%s_%s",     DsPhi.c_str(),     (*m).c_str(), cat_name.c_str()), Form("DsD yield %s %s", Bmod[DsPhi].c_str(),    mod[(*m)].c_str()),  "(1-@0)*@1",   RooArgList(*DsD_Helbin1_Fraction,    *yield_DsD[*t][both][*ds][*ph][DsPhi][*m][*c][*a]));
               //yield_DsD[*t][Helbin2][*ds][*ph][DsPhiSide][*m][*c][*a]      = new RooFormulaVar(Form("yield_DsD_%s_%s_%s",     DsPhiSide.c_str(), (*m).c_str(), cat_name.c_str()), Form("DsD yield %s %s", Bmod[DsPhiSide].c_str(),mod[(*m)].c_str()),  "(1-@0)*@1",   RooArgList(*DsD_Helbin1_Fraction,    *yield_DsD[*t][both][*ds][*ph][DsPhiSide][*m][*c][*a]));     
               yield_DsD[*t][Helbin2][*ds][*ph][DsPhi][*m][*c][*a]          = new RooFormulaVar(Form("yield_DsD_%s_%s_%s",     DsPhi.c_str(),     (*m).c_str(), cat_name.c_str()), Form("DsD yield %s %s", Bmod[DsPhi].c_str(),    mod[(*m)].c_str()),  "@0*(@1/@2)",RooArgList(*yield_DsD[*t][Helbin1][*ds][*ph][DsPhi][*m][*c][*a],*DsD_DsPhi_H2_Fraction,    *DsD_DsPhi_H1_Fraction));
               yield_DsD[*t][Helbin2][*ds][*ph][DsPhiSide][*m][*c][*a]      = new RooFormulaVar(Form("yield_DsD_%s_%s_%s",     DsPhiSide.c_str(), (*m).c_str(), cat_name.c_str()), Form("DsD yield %s %s", Bmod[DsPhiSide].c_str(),mod[(*m)].c_str()),  "@0*(@1/@2)",RooArgList(*yield_DsD[*t][Helbin1][*ds][*ph][DsPhi][*m][*c][*a],*DsD_DsPhiSide_H2_Fraction,*DsD_DsPhi_H1_Fraction));
+              yield_DsD[*t][Helbin2][*ds][*ph][DsPhiSideWide][*m][*c][*a]      = new RooFormulaVar(Form("yield_DsD_%s_%s_%s",     DsPhiSideWide.c_str(), (*m).c_str(), cat_name.c_str()), Form("DsD yield %s %s", Bmod[DsPhiSideWide].c_str(),mod[(*m)].c_str()),  "@0*(@1/@2)",RooArgList(*yield_DsD[*t][Helbin1][*ds][*ph][DsPhi][*m][*c][*a],*DsD_DsPhiSide_H2_Fraction,*DsD_DsPhi_H1_Fraction));
               
               yield_DD[*t][Helbin2][*ds][*ph][DsPhi][*m][*c][*a]           = new RooFormulaVar(Form("yield_DD_total_%s_%s_%s",DsPhi.c_str(),     (*m).c_str(), cat_name.c_str()), Form("DD yield %s %s",  Bmod[DsPhi].c_str(),     mod[(*m)].c_str()),  "@0*(@1/@2)",RooArgList(*yield_DD[*t][Helbin1][*ds][*ph][DsPhi][*m][*c][*a],*DD_DsPhi_H2_Fraction,    *DD_DsPhi_H1_Fraction));
               yield_DD[*t][Helbin2][*ds][*ph][DsPhiSide][*m][*c][*a]       = new RooFormulaVar(Form("yield_DD_total_%s_%s_%s",DsPhiSide.c_str(), (*m).c_str(), cat_name.c_str()), Form("DD yield %s %s",  Bmod[DsPhiSide].c_str(), mod[(*m)].c_str()),  "@0*(@1/@2)",RooArgList(*yield_DD[*t][Helbin1][*ds][*ph][DsPhi][*m][*c][*a],*DD_DsPhiSide_H2_Fraction,*DD_DsPhi_H1_Fraction));
+              yield_DD[*t][Helbin2][*ds][*ph][DsPhiSideWide][*m][*c][*a]       = new RooFormulaVar(Form("yield_DD_total_%s_%s_%s",DsPhiSideWide.c_str(), (*m).c_str(), cat_name.c_str()), Form("DD yield %s %s",  Bmod[DsPhiSideWide].c_str(), mod[(*m)].c_str()),  "@0*(@1/@2)",RooArgList(*yield_DD[*t][Helbin1][*ds][*ph][DsPhi][*m][*c][*a],*DD_DsPhiSide_H2_Fraction,*DD_DsPhi_H1_Fraction));
               
             }
           }
@@ -1608,15 +1811,18 @@ void DsPhiModel::DefineModel()
               sigma[*t][both][*ds][*ph][DsD0][*m][*c][*a]   = new RooRealVar(   Form("sigma_DsD0_%s", cat_name.c_str()) ,Form("%s sigma",mod[*m].c_str()),Inital_Sigma_values[*m],  2,  30);
               sigma[*t][both][*ds][*ph][DsPhi][*m][*c][*a]  = new RooFormulaVar(Form("sigma_DsPhi_%s",cat_name.c_str()) ,Form("%s sigma",mod[*m].c_str()),Form("%f*@0",Fixed_Norm_Sigma_ratio[*m]) ,RooArgList(*sigma[*t][both][*ds][*ph][DsD0][*m][*c][*a])); 
               sigma[*t][both][*ds][*ph][DsPhiSide][*m][*c][*a] = sigma[*t][both][*ds][*ph][DsPhi][*m][*c][*a];
+              sigma[*t][both][*ds][*ph][DsPhiSideWide][*m][*c][*a] = sigma[*t][both][*ds][*ph][DsPhi][*m][*c][*a];
               //sig_ratio[*t][both][*ds][*ph][*b][*m]         = new RooRealVar(Form("Sigma_ratio_%s", cat_name.c_str()), Form("%s %s Sigma ratio ",mod[*m].c_str(),Bmod[*b].c_str()), Fixed_CB_Sigma_ratio[*b][*m]);
       
               sigma2[*t][both][*ds][*ph][DsD0][*m][*c][*a]   = new RooFormulaVar(Form("sigma2_DsD0_%s", cat_name.c_str()), Form("Sigma 2 DsD0 %s",(*m).c_str()),  Form("@0/%f",Fixed_CB_Sigma_ratio[DsD0][*m] ), RooArgList(*sigma[*t][both][*ds][*ph][DsD0][*m][*c][*a]   ));
               sigma2[*t][both][*ds][*ph][DsPhi][*m][*c][*a]  = new RooFormulaVar(Form("sigma2_DsPhi_%s",cat_name.c_str()), Form("Sigma 2 DsPhi %s",(*m).c_str()), Form("@0/%f",Fixed_CB_Sigma_ratio[DsPhi][*m]), RooArgList(*sigma[*t][both][*ds][*ph][DsPhi][*m][*c][*a]  ));
               sigma2[*t][both][*ds][*ph][DsPhiSide][*m][*c][*a] = sigma2[*t][both][*ds][*ph][DsPhi][*m][*c][*a];
+              sigma2[*t][both][*ds][*ph][DsPhiSideWide][*m][*c][*a] = sigma2[*t][both][*ds][*ph][DsPhi][*m][*c][*a];
               
               avg_sigma[*t][both][*ds][*ph][DsD0][*m][both][both]      = new RooFormulaVar(Form("avg_sigma_DsD0_%s",  cat_name.c_str()), Form("Average sigma %s %s",Bmod[DsD0].c_str(), mod[*m].c_str()),  Form("(@0*%f + @1*(1-%f))",Fixed_CB_fraction[DsD0][*m], Fixed_CB_fraction[DsD0][*m]  ), RooArgList(*sigma[*t][both][*ds][*ph][DsD0][*m][*c][*a], *sigma2[*t][both][*ds][*ph][DsD0][*m][*c][*a]  ));
               avg_sigma[*t][both][*ds][*ph][DsPhi][*m][both][both]     = new RooFormulaVar(Form("avg_sigma_DsPhi_%s", cat_name.c_str()), Form("Average sigma %s %s",Bmod[DsPhi].c_str(),mod[*m].c_str()),  Form("(@0*%f + @1*(1-%f))",Fixed_CB_fraction[DsPhi][*m],Fixed_CB_fraction[DsPhi][*m] ), RooArgList(*sigma[*t][both][*ds][*ph][DsPhi][*m][*c][*a],*sigma2[*t][both][*ds][*ph][DsPhi][*m][*c][*a] ));
               avg_sigma[*t][both][*ds][*ph][DsPhiSide][*m][both][both] = avg_sigma[*t][both][*ds][*ph][DsPhi][*m][both][both];
+              avg_sigma[*t][both][*ds][*ph][DsPhiSideWide][*m][both][both] = avg_sigma[*t][both][*ds][*ph][DsPhi][*m][both][both];
               
               cat_name = Form("%s_%s_%s_%s_%s_%s_%s",(*t).c_str(),Helbin1.c_str(),(*ds).c_str(),(*ph).c_str(),(*m).c_str(),(both).c_str(),(*a).c_str());
 
@@ -1624,28 +1830,34 @@ void DsPhiModel::DefineModel()
               if(allConst_exYield) ((RooRealVar*)sigma[*t][Helbin1][*ds][*ph][DsD0][*m][*c][*a])->setConstant();
               sigma[*t][Helbin1][*ds][*ph][DsPhi][*m][*c][*a]  = new RooFormulaVar(Form("sigma_DsPhi_%s",cat_name.c_str()) ,Form("%s sigma",mod[*m].c_str()),Form("%f*@0",Fixed_Norm_Sigma_ratio[*m]) ,RooArgList(*sigma[*t][Helbin1][*ds][*ph][DsD0][*m][*c][*a])); 
               sigma[*t][Helbin1][*ds][*ph][DsPhiSide][*m][*c][*a] = sigma[*t][Helbin1][*ds][*ph][DsPhi][*m][*c][*a];
+              sigma[*t][Helbin1][*ds][*ph][DsPhiSideWide][*m][*c][*a] = sigma[*t][Helbin1][*ds][*ph][DsPhi][*m][*c][*a];
               //sig_ratio[*t][Helbin1][*ds][*ph][*b][*m]         = new RooRealVar(Form("Sigma_ratio_%s", cat_name.c_str()), Form("%s %s Sigma ratio ",mod[*m].c_str(),Bmod[*b].c_str()), Fixed_CB_Sigma_ratio[*b][*m]);
       
               sigma2[*t][Helbin1][*ds][*ph][DsD0][*m][*c][*a]   = new RooFormulaVar(Form("sigma2_DsD0_%s", cat_name.c_str()), Form("Sigma 2 DsD0 %s",(*m).c_str()),  Form("@0/%f",Fixed_CB_Sigma_ratio[DsD0][*m] ), RooArgList(*sigma[*t][Helbin1][*ds][*ph][DsD0][*m][*c][*a]   ));
               sigma2[*t][Helbin1][*ds][*ph][DsPhi][*m][*c][*a]  = new RooFormulaVar(Form("sigma2_DsPhi_%s",cat_name.c_str()), Form("Sigma 2 DsPhi %s",(*m).c_str()), Form("@0/%f",Fixed_CB_Sigma_ratio[DsPhi][*m]), RooArgList(*sigma[*t][Helbin1][*ds][*ph][DsPhi][*m][*c][*a]  ));
               sigma2[*t][Helbin1][*ds][*ph][DsPhiSide][*m][*c][*a] = sigma2[*t][Helbin1][*ds][*ph][DsPhi][*m][*c][*a];
+              sigma2[*t][Helbin1][*ds][*ph][DsPhiSideWide][*m][*c][*a] = sigma2[*t][Helbin1][*ds][*ph][DsPhi][*m][*c][*a];
               
               avg_sigma[*t][Helbin1][*ds][*ph][DsD0][*m][*c][*a]      = new RooFormulaVar(Form("avg_sigma_DsD0_%s",  cat_name.c_str()), Form("Average sigma %s %s",Bmod[DsD0].c_str(), mod[*m].c_str()),  Form("(@0*%f + @1*(1-%f))",Fixed_CB_fraction[DsD0][*m], Fixed_CB_fraction[DsD0][*m]  ), RooArgList(*sigma[*t][Helbin1][*ds][*ph][DsD0][*m][*c][*a], *sigma2[*t][Helbin1][*ds][*ph][DsD0][*m][*c][*a]  ));
               avg_sigma[*t][Helbin1][*ds][*ph][DsPhi][*m][*c][*a]     = new RooFormulaVar(Form("avg_sigma_DsPhi_%s", cat_name.c_str()), Form("Average sigma %s %s",Bmod[DsPhi].c_str(),mod[*m].c_str()),  Form("(@0*%f + @1*(1-%f))",Fixed_CB_fraction[DsPhi][*m],Fixed_CB_fraction[DsPhi][*m] ), RooArgList(*sigma[*t][Helbin1][*ds][*ph][DsPhi][*m][*c][*a],*sigma2[*t][Helbin1][*ds][*ph][DsPhi][*m][*c][*a] ));
               avg_sigma[*t][Helbin1][*ds][*ph][DsPhiSide][*m][*c][*a] = avg_sigma[*t][Helbin1][*ds][*ph][DsPhi][*m][*c][*a];
+              avg_sigma[*t][Helbin1][*ds][*ph][DsPhiSideWide][*m][*c][*a] = avg_sigma[*t][Helbin1][*ds][*ph][DsPhi][*m][*c][*a];
             
 
               sigma[*t][Helbin2][*ds][*ph][DsD0][*m][*c][*a]              = sigma[*t][Helbin1][*ds][*ph][DsD0][*m][*c][*a];
               sigma[*t][Helbin2][*ds][*ph][DsPhi][*m][*c][*a]             = sigma[*t][Helbin1][*ds][*ph][DsPhi][*m][*c][*a];
               sigma[*t][Helbin2][*ds][*ph][DsPhiSide][*m][*c][*a]         = sigma[*t][Helbin1][*ds][*ph][DsPhiSide][*m][*c][*a];
+              sigma[*t][Helbin2][*ds][*ph][DsPhiSideWide][*m][*c][*a]         = sigma[*t][Helbin1][*ds][*ph][DsPhiSideWide][*m][*c][*a];
 
               sigma2[*t][Helbin2][*ds][*ph][DsD0][*m][*c][*a]             = sigma2[*t][Helbin1][*ds][*ph][DsD0][*m][*c][*a];        
               sigma2[*t][Helbin2][*ds][*ph][DsPhi][*m][*c][*a]            = sigma2[*t][Helbin1][*ds][*ph][DsPhi][*m][*c][*a];         
               sigma2[*t][Helbin2][*ds][*ph][DsPhiSide][*m][*c][*a]        = sigma2[*t][Helbin1][*ds][*ph][DsPhiSide][*m][*c][*a];      
+              sigma2[*t][Helbin2][*ds][*ph][DsPhiSideWide][*m][*c][*a]        = sigma2[*t][Helbin1][*ds][*ph][DsPhiSideWide][*m][*c][*a];      
               
               avg_sigma[*t][Helbin2][*ds][*ph][DsD0][*m][both][both]      = avg_sigma[*t][Helbin1][*ds][*ph][DsD0][*m][both][both]; 
               avg_sigma[*t][Helbin2][*ds][*ph][DsPhi][*m][both][both]     = avg_sigma[*t][Helbin1][*ds][*ph][DsPhi][*m][both][both]; 
               avg_sigma[*t][Helbin2][*ds][*ph][DsPhiSide][*m][both][both] = avg_sigma[*t][Helbin1][*ds][*ph][DsPhiSide][*m][both][both];  
+              avg_sigma[*t][Helbin2][*ds][*ph][DsPhiSideWide][*m][both][both] = avg_sigma[*t][Helbin1][*ds][*ph][DsPhiSideWide][*m][both][both];  
  
               //sigma[*t][*h][*ds][*ph][*b][*m][both][both]  = new RooRealVar(Form("sigma_%s",         cat_name.c_str()) ,Form("%s sigma",mod[*m].c_str()),10,  5,  20); //change D0 to D^0
               //sigma[*t][*h][*ds][*ph][*b][*m][plus][up]    = new RooRealVar(Form("sigma_%s_plus_up", cat_name.c_str()) ,Form("%s sigma",mod[*m].c_str()),10,  5,  20);
@@ -1691,18 +1903,22 @@ void DsPhiModel::DefineModel()
     sigma_simple[DsD0][*m]          = new RooRealVar(   Form("sigma_DsD0_%s", (*m).c_str()) ,Form("DsD0  %s sigma",mod[*m].c_str()),Inital_Sigma_values[*m],  2,  30);
     sigma_simple[DsPhi][*m]         = new RooFormulaVar(Form("sigma_DsPhi_%s",(*m).c_str()) ,Form("DsPhi %s sigma",mod[*m].c_str()),Form("%f*@0",Fixed_Norm_Sigma_ratio[*m]) ,RooArgList(*sigma_simple[DsD0][*m])); 
     sigma_simple[DsPhiSide][*m]     = sigma_simple[DsPhi][*m];
+    sigma_simple[DsPhiSideWide][*m]     = sigma_simple[DsPhi][*m];
     
     sigma2_simple[DsD0][*m]         = new RooFormulaVar(Form("sigma2_DsD0_%s", (*m).c_str()), Form("Sigma 2 DsD0  %s",(*m).c_str()), Form("@0/%f",Fixed_CB_Sigma_ratio[DsD0][*m] ), RooArgList(*sigma_simple[DsD0][*m]   ));
     sigma2_simple[DsPhi][*m]        = new RooFormulaVar(Form("sigma2_DsPhi_%s",(*m).c_str()), Form("Sigma 2 DsPhi %s",(*m).c_str()), Form("@0/%f",Fixed_CB_Sigma_ratio[DsPhi][*m]), RooArgList(*sigma_simple[DsPhi][*m]  ));
     sigma2_simple[DsPhiSide][*m]    = sigma2_simple[DsPhi][*m];
+    sigma2_simple[DsPhiSideWide][*m]    = sigma2_simple[DsPhi][*m];
 
     avg_sigma_simple[DsD0][*m]      = new RooFormulaVar(Form("avg_sigma_DsD0_%s",  (*m).c_str()), Form("Average sigma %s %s",Bmod[DsD0].c_str(), mod[*m].c_str()),  Form("(@0*%f + @1*(1-%f))",Fixed_CB_fraction[DsD0][*m], Fixed_CB_fraction[DsD0][*m]  ), RooArgList(*sigma_simple[DsD0][*m], *sigma2_simple[DsD0][*m]  ));
     avg_sigma_simple[DsPhi][*m]     = new RooFormulaVar(Form("avg_sigma_DsPhi_%s", (*m).c_str()), Form("Average sigma %s %s",Bmod[DsPhi].c_str(),mod[*m].c_str()),  Form("(@0*%f + @1*(1-%f))",Fixed_CB_fraction[DsPhi][*m],Fixed_CB_fraction[DsPhi][*m] ), RooArgList(*sigma_simple[DsPhi][*m],*sigma2_simple[DsPhi][*m] ));
     avg_sigma_simple[DsPhiSide][*m] = avg_sigma_simple[DsPhi][*m];
+    avg_sigma_simple[DsPhiSideWide][*m] = avg_sigma_simple[DsPhi][*m];
   
     sig_frac_simple[DsD0][*m]       = new RooRealVar(   Form("Sigma_frac_%s_%s",DsD0.c_str(),     (*m).c_str()), Form("%s %s Sigma Fraction",Bmod[DsD0].c_str(),     mod[*m].c_str()), Fixed_CB_fraction[DsD0][*m]); 
     sig_frac_simple[DsPhi][*m]      = new RooRealVar(   Form("Sigma_frac_%s_%s",DsPhi.c_str(),    (*m).c_str()), Form("%s %s Sigma Fraction",Bmod[DsPhi].c_str(),    mod[*m].c_str()), Fixed_CB_fraction[DsPhi][*m]); 
     sig_frac_simple[DsPhiSide][*m]  = new RooRealVar(   Form("Sigma_frac_%s_%s",DsPhiSide.c_str(),(*m).c_str()), Form("%s %s Sigma Fraction",Bmod[DsPhiSide].c_str(),mod[*m].c_str()), Fixed_CB_fraction[DsPhiSide][*m]); 
+    sig_frac_simple[DsPhiSideWide][*m]  = new RooRealVar(   Form("Sigma_frac_%s_%s",DsPhiSideWide.c_str(),(*m).c_str()), Form("%s %s Sigma Fraction",Bmod[DsPhiSideWide].c_str(),mod[*m].c_str()), Fixed_CB_fraction[DsPhiSideWide][*m]); 
 
     if(allConst_exYield) ((RooRealVar*)sigma_simple[DsD0][*m])->setConstant();
 
@@ -1909,6 +2125,52 @@ void DsPhiModel::DefineModel()
             LITTLEHORNS_g[*t][*h][*ds][*ph][DsPhiSide][*m]      = global_G;
             LITTLEHORNS_csi[*t][*h][*ds][*ph][DsPhiSide][*m]    = global_csi;
             LITTLEHORNS_shift[*t][*h][*ds][*ph][DsPhiSide][*m]  = global_shift;
+            // ------------------------------------------
+            // PartReco shapes for Ds*Phi SidebandWide
+            // ------------------------------------------
+
+            // missed pi0 components 
+            // pi0 010
+            HORNS_a[*t][*h][*ds][*ph][DsPhiSideWide][*m]            = DsstarPhi_pi0_a;
+            HORNS_b[*t][*h][*ds][*ph][DsPhiSideWide][*m]            = DsstarPhi_pi0_b;
+            //HORNS_sigma[*t][*h][*ds][*ph][DsPhiSideWide][*m]        = avg_sigma[*t][*h][*ds][*ph][DsPhiSideWide][*m][both][both];
+            HORNS_sigma[*t][*h][*ds][*ph][DsPhiSideWide][*m]        = avg_sigma_simple[DsPhiSideWide][*m];
+            HORNS_R[*t][*h][*ds][*ph][DsPhiSideWide][*m]            = global_R;
+            HORNS_f[*t][*h][*ds][*ph][DsPhiSideWide][*m]            = global_f;
+            HORNS_csi[*t][*h][*ds][*ph][DsPhiSideWide][*m]          = global_csi;
+            HORNS_shift[*t][*h][*ds][*ph][DsPhiSideWide][*m]        = global_shift;
+            
+            //pi0 101
+            HILL2_a[*t][*h][*ds][*ph][DsPhiSideWide][*m]            = DsstarPhi_pi0_a;
+            HILL2_b[*t][*h][*ds][*ph][DsPhiSideWide][*m]            = DsstarPhi_pi0_b;
+            //HILL2_sigma[*t][*h][*ds][*ph][DsPhiSideWide][*m]        = avg_sigma[*t][*h][*ds][*ph][DsPhiSideWide][*m][both][both];
+            HILL2_sigma[*t][*h][*ds][*ph][DsPhiSideWide][*m]        = avg_sigma_simple[DsPhiSideWide][*m];
+            HILL2_R[*t][*h][*ds][*ph][DsPhiSideWide][*m]            = global_R;
+            HILL2_f[*t][*h][*ds][*ph][DsPhiSideWide][*m]            = global_f;
+            HILL2_csi[*t][*h][*ds][*ph][DsPhiSideWide][*m]          = global_csi_hill;
+            HILL2_shift[*t][*h][*ds][*ph][DsPhiSideWide][*m]        = global_shift;
+            
+            // Missed gamma components 
+            //gamma 010
+            HILL_a[*t][*h][*ds][*ph][DsPhiSideWide][*m]             = DsstarPhi_gamma_a;
+            HILL_b[*t][*h][*ds][*ph][DsPhiSideWide][*m]             = DsstarPhi_gamma_b;
+            //HILL_sigma[*t][*h][*ds][*ph][DsPhiSideWide][*m]         = avg_sigma[*t][*h][*ds][*ph][DsPhiSideWide][*m][both][both]; 
+            HILL_sigma[*t][*h][*ds][*ph][DsPhiSideWide][*m]         = avg_sigma_simple[DsPhiSideWide][*m]; 
+            HILL_R[*t][*h][*ds][*ph][DsPhiSideWide][*m]             = global_R;
+            HILL_f[*t][*h][*ds][*ph][DsPhiSideWide][*m]             = global_f;
+            HILL_csi[*t][*h][*ds][*ph][DsPhiSideWide][*m]           = global_csi_hill;
+            HILL_shift[*t][*h][*ds][*ph][DsPhiSideWide][*m]         = global_shift;
+
+            //gamma 101
+            LITTLEHORNS_a[*t][*h][*ds][*ph][DsPhiSideWide][*m]      = DsstarPhi_gamma_a;
+            LITTLEHORNS_b[*t][*h][*ds][*ph][DsPhiSideWide][*m]      = DsstarPhi_gamma_b;
+            //LITTLEHORNS_sigma[*t][*h][*ds][*ph][DsPhiSideWide][*m]  = avg_sigma[*t][*h][*ds][*ph][DsPhiSideWide][*m][both][both]; 
+            LITTLEHORNS_sigma[*t][*h][*ds][*ph][DsPhiSideWide][*m]  = avg_sigma_simple[DsPhiSideWide][*m]; 
+            LITTLEHORNS_R[*t][*h][*ds][*ph][DsPhiSideWide][*m]      = global_R;
+            LITTLEHORNS_f[*t][*h][*ds][*ph][DsPhiSideWide][*m]      = global_f;
+            LITTLEHORNS_g[*t][*h][*ds][*ph][DsPhiSideWide][*m]      = global_G;
+            LITTLEHORNS_csi[*t][*h][*ds][*ph][DsPhiSideWide][*m]    = global_csi;
+            LITTLEHORNS_shift[*t][*h][*ds][*ph][DsPhiSideWide][*m]  = global_shift;
 
 
             // ===============
@@ -1930,6 +2192,15 @@ void DsPhiModel::DefineModel()
             HORNS_DsstKK_f[*t][*h][*ds][*ph][DsPhiSide][*m]      = global_f;
             HORNS_DsstKK_csi[*t][*h][*ds][*ph][DsPhiSide][*m]    = global_csi;
             HORNS_DsstKK_shift[*t][*h][*ds][*ph][DsPhiSide][*m]  = global_shift_test;
+                        
+            HORNS_DsstKK_a[*t][*h][*ds][*ph][DsPhiSideWide][*m]      = new RooRealVar(Form("HORNS_DsstKK_a_%s",     cat_name.c_str()), "HORNS_DsstKK a",  5051.478 );
+            HORNS_DsstKK_b[*t][*h][*ds][*ph][DsPhiSideWide][*m]      = new RooRealVar(Form("HORNS_DsstKK_b_%s",     cat_name.c_str()), "HORNS_DsstKK b",  5128.577 );
+            //HORNS_DsstKK_sigma[*t][*h][*ds][*ph][DsPhiSideWide][*m]  = avg_sigma[*t][*h][*ds][*ph][DsPhiSideWide][*m][both][both];
+            HORNS_DsstKK_sigma[*t][*h][*ds][*ph][DsPhiSideWide][*m]  = avg_sigma_simple[DsPhiSideWide][*m];
+            HORNS_DsstKK_R[*t][*h][*ds][*ph][DsPhiSideWide][*m]      = global_R;
+            HORNS_DsstKK_f[*t][*h][*ds][*ph][DsPhiSideWide][*m]      = global_f;
+            HORNS_DsstKK_csi[*t][*h][*ds][*ph][DsPhiSideWide][*m]    = global_csi;
+            HORNS_DsstKK_shift[*t][*h][*ds][*ph][DsPhiSideWide][*m]  = global_shift_test;
             
             //HORNS_a[*t][*h][*ds][*ph][*b][*m]      = new RooRealVar(Form("HORNS_a_%s",     cat_name.c_str()), "HORNS a",      5051.8  );
             //HORNS_b[*t][*h][*ds][*ph][*b][*m]      = new RooRealVar(Form("HORNS_b_%s",     cat_name.c_str()), "HORNS b",      5124.5  );
@@ -2007,18 +2278,26 @@ void DsPhiModel::DefineModel()
                   sigma2[*t][*h][*ds][*ph][*b][*m][*c][*a]    = sigma2[*t][both][*ds][*ph][*b][*m][*chargeList.begin()][*a];
                   avg_sigma[*t][*h][*ds][*ph][*b][*m][*c][*a] = avg_sigma[*t][both][*ds][*ph][*b][*m][*chargeList.begin()][*a];
 
-                  Low_Mass_total[*t][*h][*ds][*ph][*b][*m][*c][*a] = Low_Mass_total[*t][both][*ds][*ph][*b][*m][*chargeList.begin()][*a];
+                  //Low_Mass_total[*t][*h][*ds][*ph][*b][*m][*c][*a] = Low_Mass_total[*t][both][*ds][*ph][*b][*m][*chargeList.begin()][*a];
                   
                   sigma[*t][*h][*ds][*ph][*b][*m][*c][*a]     = sigma[*t][*h][*ds][*ph][*b][*m][*chargeList.begin()][*a];
                   sigma2[*t][*h][*ds][*ph][*b][*m][*c][*a]    = sigma2[*t][*h][*ds][*ph][*b][*m][*chargeList.begin()][*a];
                   avg_sigma[*t][*h][*ds][*ph][*b][*m][*c][*a] = avg_sigma[*t][*h][*ds][*ph][*b][*m][*chargeList.begin()][*a];
 
-                  Low_Mass_total[*t][*h][*ds][*ph][*b][*m][*c][*a] = Low_Mass_total[*t][*h][*ds][*ph][*b][*m][*chargeList.begin()][*a];
-
+                  //Low_Mass_total[*t][*h][*ds][*ph][*b][*m][*c][*a] = Low_Mass_total[*t][*h][*ds][*ph][*b][*m][*chargeList.begin()][*a];
+                  //Low_Mass_total[*t][both][*ds][*ph][DsD0][*m][*c][*a]  = Low_Mass_total[*t][both][*ds][*ph][DsD0][*m][*chargeList.begin()][*a];
+                  //Low_Mass_total[*t][both][*ds][*ph][DsPhi][*m][*c][*a] = Low_Mass_total[*t][both][*ds][*ph][DsPhi][*m][*chargeList.begin()][*a];
 
                   yield_comb[*t][*h][*ds][*ph][*b][*m][*c][*a]     = yield_comb[*t][*h][*ds][*ph][*b][*m][*chargeList.begin()][*a];
                   B_yield[*t][*h][*ds][*ph][DsD0][*m][*c][*a]      = B_yield[*t][*h][*ds][*ph][DsD0][*m][*chargeList.begin()][*a];
                   
+                  PR_total_yield[*t][*h][*ds][*ph][*b][*m][*c][*a] = PR_total_yield[*t][*h][*ds][*ph][*b][*m][*chargeList.begin()][*a];
+                  
+                  yield_Dsa1[*t][*h][*ds][*ph][*b][*m][*c][*a]        = yield_Dsa1[*t][*h][*ds][*ph][*b][*m][*chargeList.begin()][*a];        
+                  yield_DD[*t][*h][*ds][*ph][*b][*m][*c][*a]          = yield_DD[*t][*h][*ds][*ph][*b][*m][*chargeList.begin()][*a];      
+                  yield_dsstd0[*t][*h][*ds][*ph][*b][*m][*c][*a]      = yield_dsstd0[*t][*h][*ds][*ph][*b][*m][*chargeList.begin()][*a];           
+                  yield_dsdst0[*t][*h][*ds][*ph][*b][*m][*c][*a]      = yield_dsdst0[*t][*h][*ds][*ph][*b][*m][*chargeList.begin()][*a];           
+                  yield_DsstarDstar0[*t][*h][*ds][*ph][*b][*m][*c][*a]= yield_DsstarDstar0[*t][*h][*ds][*ph][*b][*m][*chargeList.begin()][*a];                
                 }
               }
             }
@@ -2054,6 +2333,7 @@ void DsPhiModel::DefineModel()
   RooAbsPdf *pdf_KKst = 0;
   RooAbsPdf *pdf_DsstKKst = 0;
   RooAbsPdf *pdf_DsstKK = 0;
+  RooAbsPdf *pdf_DsKK = 0;
   RooAbsPdf *pdf_DsD = 0;
 
   RooAbsPdf *pdf_Bs2DsDs   = 0; 
@@ -2203,7 +2483,7 @@ void DsPhiModel::DefineModel()
                     //sim->Print();
                     if(par->debug) std::cout<<"Running: DsPhiModel::DefineModel() --> Added to sim pdf: "<< str.str().c_str() <<std::endl;
                     
-                  } else if((*b).c_str()==DsPhi || (*b).c_str()==DsPhiSide){
+                  } else if((*b).c_str()==DsPhi || (*b).c_str()==DsPhiSide|| (*b).c_str()==DsPhiSideWide){
                     if(par->debug) std::cout<<"Running: DsPhiModel::DefineModel() --> Adding DsPhi mode... " <<std::endl; 
                     
                     //RooHORNSdini
@@ -2290,7 +2570,8 @@ void DsPhiModel::DefineModel()
                     RooAbsReal* HORNS_DsstKK_var_R     = HORNS_DsstKK_R[*t][*h][*ds][*ph][*b][*m];
                     RooAbsReal* HORNS_DsstKK_var_f     = HORNS_DsstKK_f[*t][*h][*ds][*ph][*b][*m];
                     pdf_DsstKK = new RooHORNSdini(Form("pdf_DsstKK_%s",tag.c_str()), "", *mB, *HORNS_DsstKK_var_a, *HORNS_DsstKK_var_b, *HORNS_DsstKK_var_csi, *HORNS_DsstKK_var_shift, *HORNS_DsstKK_var_sigma, *HORNS_DsstKK_var_R, *HORNS_DsstKK_var_f);
-                
+                    pdf_DsKK   = new RooAddPdf(  *((RooAddPdf*)pdf_peak), Form("pdf_DsKK_%s",tag.c_str()) );
+
                     pdf_DsD = new RooFFTConvPdf(*(PartRecoPDF_B2DsD_Conv), Form("pdf_DsD_%s",tag.c_str()) );
 
 
@@ -2309,7 +2590,7 @@ void DsPhiModel::DefineModel()
                                         ,*pdf_PartReco 
                                         //,*pdf_Dsa1, 
                                         ,*pdf_KKst
-                                        //,*pdf_DsstKK
+                                        ,*pdf_DsKK
                                         //,*pdf_DsD
                                         ,*pdf_DD
                                        );
@@ -2321,7 +2602,9 @@ void DsPhiModel::DefineModel()
                                         ,*PR_total_yield[*t][*h][*ds][*ph][*b][*m][*c][*a]
                                         ,*yield_Dsa1[*t][*h][*ds][*ph][*b][*m][*c][*a] 
                                         //,*yield_dsstKK[*t][*h][*ds][*ph][*b][*m][*c][*a] 
-                                        //,*yield_DsD[*t][*h][*ds][*ph][*b][*m][*c][*a] 
+                                        //,*yield_DsD[*t][*h][*ds][*ph][*b][*m][*c][*a]
+                                        ,*yield_DsKK[*t][*h][*ds][*ph][*b][*m][*c][*a] 
+
                                         ,*yield_DD[*t][*h][*ds][*ph][*b][*m][*c][*a]
                                         );
                                         // *yield_DsstKKst[*t][*h][*ds][*ph][*b][*m][*c][*a] );
@@ -2385,9 +2668,73 @@ RooArgSet* DsPhiModel::GetParameters()
 
 
 
-void DsPhiModel::PrintResult()
+void DsPhiModel::PrintResult(RooFitResult* r)
 {
-  if(par->debug) std::cout<<"Running: DsPhiModel::PrintResults()"<<std::endl;
+  if(par->debug) std::cout<<"Running: DsPhiModel::PrintResult()"<<std::endl;
+  
+  RooArgList list1(*B_yield[both][Helbin1][DsBDTbin1][PhiBDTbin1][DsPhi][Ds2KKPi][both][both],
+                   *B_yield[both][Helbin2][DsBDTbin1][PhiBDTbin1][DsPhi][Ds2KKPi][both][both],
+                   *B_yield[both][Helbin1][DsBDTbin1][PhiBDTbin1][DsPhi][Ds2PhiPi][both][both],
+                   *B_yield[both][Helbin2][DsBDTbin1][PhiBDTbin1][DsPhi][Ds2PhiPi][both][both],
+                   *B_yield[both][Helbin1][DsBDTbin1][PhiBDTbin1][DsPhi][Ds2KPiPi][both][both],
+                   *B_yield[both][Helbin2][DsBDTbin1][PhiBDTbin1][DsPhi][Ds2KPiPi][both][both],
+                   *B_yield[both][Helbin1][DsBDTbin1][PhiBDTbin1][DsPhi][Ds2PiPiPi][both][both],
+                   *B_yield[both][Helbin2][DsBDTbin1][PhiBDTbin1][DsPhi][Ds2PiPiPi][both][both]
+                   );
+                                                       
+  RooArgList list2(*B_yield[both][Helbin1][DsBDTbin1][PhiBDTbin1][DsPhiSide][Ds2KKPi][both][both],
+                   *B_yield[both][Helbin2][DsBDTbin1][PhiBDTbin1][DsPhiSide][Ds2KKPi][both][both],
+                   *B_yield[both][Helbin1][DsBDTbin1][PhiBDTbin1][DsPhiSide][Ds2PhiPi][both][both],
+                   *B_yield[both][Helbin2][DsBDTbin1][PhiBDTbin1][DsPhiSide][Ds2PhiPi][both][both],
+                   *B_yield[both][Helbin1][DsBDTbin1][PhiBDTbin1][DsPhiSide][Ds2KPiPi][both][both],
+                   *B_yield[both][Helbin2][DsBDTbin1][PhiBDTbin1][DsPhiSide][Ds2KPiPi][both][both],
+                   *B_yield[both][Helbin1][DsBDTbin1][PhiBDTbin1][DsPhiSide][Ds2PiPiPi][both][both],
+                   *B_yield[both][Helbin2][DsBDTbin1][PhiBDTbin1][DsPhiSide][Ds2PiPiPi][both][both]
+                   );
+  list1.add(list2);                                                    
+  RooFormulaVar *Total = new RooFormulaVar("total_yield" ,
+                                           "total_yield", 
+                                           "@0+@1+@2+@3+@4+@5+@6+@7+@8+@9+@10+@11+@12+@13+@14+@15", 
+                                           list1
+                                           );
+  
+  float total     =  Total->getVal();
+  float total_err =  Total->getPropagatedError(*r);
+  std::cout<< "\nTotal DsPhi: "<<total<< " +/- " << total_err << "\n"<<  std::endl;
+
+
+  RooArgList list3(*yield_DsKK[both][Helbin1][DsBDTbin1][PhiBDTbin1][DsPhi][Ds2KKPi][both][both],
+                   *yield_DsKK[both][Helbin2][DsBDTbin1][PhiBDTbin1][DsPhi][Ds2KKPi][both][both],
+                   *yield_DsKK[both][Helbin1][DsBDTbin1][PhiBDTbin1][DsPhi][Ds2PhiPi][both][both],
+                   *yield_DsKK[both][Helbin2][DsBDTbin1][PhiBDTbin1][DsPhi][Ds2PhiPi][both][both],
+                   *yield_DsKK[both][Helbin1][DsBDTbin1][PhiBDTbin1][DsPhi][Ds2KPiPi][both][both],
+                   *yield_DsKK[both][Helbin2][DsBDTbin1][PhiBDTbin1][DsPhi][Ds2KPiPi][both][both],
+                   *yield_DsKK[both][Helbin1][DsBDTbin1][PhiBDTbin1][DsPhi][Ds2PiPiPi][both][both],
+                   *yield_DsKK[both][Helbin2][DsBDTbin1][PhiBDTbin1][DsPhi][Ds2PiPiPi][both][both]
+                   );
+                                                       
+  RooArgList list4(*yield_DsKK[both][Helbin1][DsBDTbin1][PhiBDTbin1][DsPhiSide][Ds2KKPi][both][both],
+                   *yield_DsKK[both][Helbin2][DsBDTbin1][PhiBDTbin1][DsPhiSide][Ds2KKPi][both][both],
+                   *yield_DsKK[both][Helbin1][DsBDTbin1][PhiBDTbin1][DsPhiSide][Ds2PhiPi][both][both],
+                   *yield_DsKK[both][Helbin2][DsBDTbin1][PhiBDTbin1][DsPhiSide][Ds2PhiPi][both][both],
+                   *yield_DsKK[both][Helbin1][DsBDTbin1][PhiBDTbin1][DsPhiSide][Ds2KPiPi][both][both],
+                   *yield_DsKK[both][Helbin2][DsBDTbin1][PhiBDTbin1][DsPhiSide][Ds2KPiPi][both][both],
+                   *yield_DsKK[both][Helbin1][DsBDTbin1][PhiBDTbin1][DsPhiSide][Ds2PiPiPi][both][both],
+                   *yield_DsKK[both][Helbin2][DsBDTbin1][PhiBDTbin1][DsPhiSide][Ds2PiPiPi][both][both]
+                   );
+  list3.add(list4);                                                    
+  RooFormulaVar *Total_DsKK = new RooFormulaVar("total_yield_DsKK" ,
+                                           "total_yield_DsKK", 
+                                           "@0+@1+@2+@3+@4+@5+@6+@7+@8+@9+@10+@11+@12+@13+@14+@15", 
+                                           list3
+                                           );
+  
+  float total_DsKK     =  Total_DsKK->getVal();
+  float total_DsKK_err =  Total_DsKK->getPropagatedError(*r);
+  std::cout<< "\nTotal DsKK: "<<total_DsKK<< " +/- " << total_DsKK_err << "\n"<<  std::endl;
+
+
+
   for(std::vector<std::string>::iterator t=typeList.begin();t!=typeList.end();t++){ 
     for(std::vector<std::string>::iterator h=HelBinList.begin();h!=HelBinList.end();h++){ 
       for(std::vector<std::string>::iterator ds=DsBDTBinList.begin();ds!=DsBDTBinList.end();ds++){ 
@@ -2395,34 +2742,24 @@ void DsPhiModel::PrintResult()
           for(std::vector<std::string>::iterator b=BmodeList.begin();b!=BmodeList.end();b++){  
             for(std::vector<std::string>::iterator m=modeList.begin();m!=modeList.end();m++){
               for(std::vector<std::string>::iterator a=magnetList.begin();a!=magnetList.end();a++){
-                if((*b)==DsPhi){
-                  if (needsBlinding) std::cout << "DsPhi Mode is BLIND: Printing blinded yield" << std::endl;
-                  float y_peak =  B_yield[*t][*h][*ds][*ph][*b][*m][both][*a]->getVal();
-                  //float y_yp   =  yield_peak[*t][*h][*ds][*ph][*b][*m][both][*a]->getVal();
-                  float y_comb =  yield_comb[*t][*h][*ds][*ph][*b][*m][both][*a]->getVal();
-                  float y_dsa1 =  yield_Dsa1[*t][*h][*ds][*ph][*b][*m][both][*a]->getVal();
-                  float y_partreco =   PR_total_yield[*t][*h][*ds][*ph][*b][*m][both][*a]->getVal();
-                  
-                  std::cout<< "\n---------------------------"<<std::endl;
-                  std::cout<<(*b)<<", "<<(*m)<<", magnet: "<<(*a)<<", year: "<<(*t)<<"HelBin: " << (*h)<<std::endl;
-                  //std::cout<< " B Yield: "<<y_peak<<std::endl;
-                  //std::cout<< " Yield peak: "<<y_yp<<std::endl;
-                  std::cout<< " Comb:    "<<y_comb<<std::endl;
-                  std::cout<< " Dsa1:    "<<y_dsa1<<std::endl;
-                  std::cout<< " Ds*Phi:  "<<y_partreco<<std::endl;
-                  std::cout<< "---------------------------\n"<<std::endl;
-                  //B_yield[*t][*h][*ds][*ph][*b][*m][both][*a]->printValue();
-                } else if((*b)==DsPhiSide){
-                  if (needsBlinding) std::cout << "DsPhi Mode is BLIND: Printing blinded yield" << std::endl;
-                  float y_peak =  B_yield[*t][*h][*ds][*ph][*b][*m][both][*a]->getVal();
-                  //float y_yp   =  yield_peak[*t][*h][*ds][*ph][*b][*m][both][*a]->getVal();
-                  float y_comb =  yield_comb[*t][*h][*ds][*ph][*b][*m][both][*a]->getVal();
-                  float y_dsa1 =  yield_Dsa1[*t][*h][*ds][*ph][*b][*m][both][*a]->getVal();
-                  
+                if((*b)==DsPhi||(*b)==DsPhiSide||(*b)==DsPhiSideWide){
                   std::cout<< "\n---------------------------"<<std::endl;
                   std::cout<<(*b)<<", "<<(*m)<<", magnet: "<<(*a)<<", year: "<<(*t)<<", HelBin: " << (*h)<<std::endl;
-                  //std::cout<< " B Yield: "<<y_peak<<std::endl;
-                  //std::cout<< " Yield peak: "<<y_yp<<std::endl;
+                  
+                  if (needsBlinding){
+                    std::cout << "DsPhi Mode is BLIND: Printing blinded yield" << std::endl;
+                  } else{
+                    float y_peak     =  B_yield[*t][*h][*ds][*ph][*b][*m][both][*a]->getVal();
+                    float y_peak_err =  B_yield[*t][*h][*ds][*ph][*b][*m][both][*a]->getPropagatedError(*r);
+                    float y_yp       =  yield_peak[*t][*h][*ds][*ph][*b][*m][both][*a]->getVal();
+                    float y_yp_err   =  yield_peak[*t][*h][*ds][*ph][*b][*m][both][*a]->getPropagatedError(*r);
+                    std::cout<< " B Yield: "<<y_peak<< " +/- " << y_peak_err << std::endl;
+                    std::cout<< " Yield peak: "<<y_yp<< " +/- " << y_yp_err <<std::endl;
+                  }
+                  float y_comb =  yield_comb[*t][*h][*ds][*ph][*b][*m][both][*a]->getVal();
+                  float y_dsa1 =  yield_Dsa1[*t][*h][*ds][*ph][*b][*m][both][*a]->getVal();
+                  
+                  
                   std::cout<< " Comb:    "<<y_comb<<std::endl;
                   std::cout<< " Dsa1:    "<<y_dsa1<<std::endl;
 
@@ -2431,15 +2768,15 @@ void DsPhiModel::PrintResult()
                 } else {
                   if(par->sumOverCharges){
                     float y_peak   =  B_yield[*t][*h][*ds][*ph][*b][*m][both][*a]->getVal();
-                    //float y_yp   =  yield_peak[*t][*h][*ds][*ph][*b][*m][both][*a]->getVal();
+                    float y_yp   =  yield_peak[*t][*h][*ds][*ph][*b][*m][both][*a]->getVal();
                     float y_comb   =  yield_comb[*t][*h][*ds][*ph][*b][*m][both][*a]->getVal();
                     float y_dsdst0 =  yield_dsdst0[*t][*h][*ds][*ph][*b][*m][both][*a]->getVal();
                     float y_dsstd0 =  yield_dsstd0[*t][*h][*ds][*ph][*b][*m][both][*a]->getVal();
                     
                     std::cout<< "\n---------------------------"<<std::endl;
                     std::cout<<(*b)<<", "<<(*m)<<", magnet-"<<(*a)<<", year-"<<(*t)<<" :"<<", HelBin: " << (*h)<<std::endl;
-                    //std::cout<< " B Yield: "<<y_peak<<std::endl;
-                    //std::cout<< " Yield peak: "<<y_yp<<std::endl;
+                    std::cout<< " B Yield: "<<y_peak<<std::endl;
+                    std::cout<< " Yield peak: "<<y_yp<<std::endl;
                     std::cout<< " Comb:   "<<y_comb<<std::endl;
                     std::cout<< " DsD*0:  "<<y_dsdst0<<std::endl;
                     std::cout<< " Ds*D0:  "<<y_dsstd0<<std::endl;
@@ -2545,7 +2882,7 @@ void DsPhiModel::PrintResult()
 
 std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,double> > > > > > > > > DsPhiModel::GetResult()
 {
-  if(par->debug) std::cout<<"Running: DsPhiModel::GetResults()"<<std::endl;
+  if(par->debug) std::cout<<"Running: DsPhiModel::GetResults()"<<std::endl;            
   for(std::vector<std::string>::iterator t=typeList.begin();t!=typeList.end();t++){ 
     for(std::vector<std::string>::iterator h=HelBinList.begin();h!=HelBinList.end();h++){ 
       for(std::vector<std::string>::iterator ds=DsBDTBinList.begin();ds!=DsBDTBinList.end();ds++){ 
@@ -2554,7 +2891,7 @@ std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::str
             for(std::vector<std::string>::iterator m=modeList.begin();m!=modeList.end();m++){
               for(std::vector<std::string>::iterator a=magnetList.begin();a!=magnetList.end();a++){
                 for(std::vector<std::string>::iterator c=chargeList.begin();c!=chargeList.end();c++){
-                  if (needsBlinding && ((*b)==DsPhi||(*b)==DsPhiSide) ) {
+                  if (needsBlinding && ((*b)==DsPhi||(*b)==DsPhiSide||(*b)==DsPhiSideWide) ) {
                     std::cout << "DsPhi mode is BLIND, therefore no values returned " << std::endl;
                   } else {
 

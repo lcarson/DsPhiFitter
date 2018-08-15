@@ -6,8 +6,8 @@ def makeSubmitScript(sysDir, seed, variableList, wall, brstring, inputMode,other
     dirname=sysDir
     os.chdir(dirname)
     os.system("echo '#!/bin/bash' >> BatchSubmit_"+seed+".sh");
-    os.system("echo '#PBS -l cput="+wall+":00:00' >> BatchSubmit_"+seed+".sh");
-    os.system("echo '#PBS -l walltime="+wall+":00:00' >> BatchSubmit_"+seed+".sh");
+    os.system("echo '#PBS -l cput="+wall+":59:00' >> BatchSubmit_"+seed+".sh");
+    os.system("echo '#PBS -l walltime="+wall+":59:00' >> BatchSubmit_"+seed+".sh");
     os.system("echo 'source /data/lhcb/sw/scripts/lbsetup-cvmfs.sh' >> BatchSubmit_"+seed+".sh");
     os.system("echo '. SetupProject.sh Gaudi ROOT' >> BatchSubmit_"+seed+".sh");
 
@@ -63,8 +63,49 @@ if brtype=='f':
 #if mergedInput=='y':
 #    brstring += ' -D '
 
+#list = [12.0,13.0]
+#list = [0.0, 2.0 , 4.0 , 6.0 , 8.0 , 10.0 , 12.0 ,14.0 ,16.0 ,18.0, 20.0, 22.0, 24.0, 26.0 ,28.0, 30.0  ]
 
-list = [0.0, 2.0 , 4.0 , 6.0 , 8.0 , 10.0 , 12.0 ,14.0 ,16.0 ,18.0, 20.0, 22.0, 24.0, 26.0 ,28.0, 30.0  ]
+list = [0.0, 
+        1.0, 
+        2.0,
+        3.0,
+        4.0,
+        5.0,
+        6.0,
+        7.0,
+        8.0,
+        10.0,
+        10.5,
+        11.0,
+        11.5,
+        12.0,
+        12.5,
+        13.0,
+        13.5,
+        14.0,
+        14.5,
+        15.0,
+        15.5,
+        16.0,
+        16.5,
+        17.0,
+        17.5,
+        18.0,
+        18.5,
+        19.0,
+        19.5,
+        20.5,
+        20.0,
+        22.0,
+        24.0,
+        26.0,
+        28.0,
+        29.0,
+        30.0  ]
+
+#list = [0.0, 0.2, 0.4 , 0.6 , 0.8 , 1.0 , 1.2 ,1.4 ,1.6 ,1.8, 2.0, 2.2, 2.4, 2.6 ,2.8, 3.0  ]
+#list = [2*0.0, 2*0.2 , 2*0.4 , 2*0.6 , 2*0.8 , 2*1.0 , 2*1.2 ,2*1.4 ,2*1.6 ,2*1.8, 2*2.0, 2*2.2, 2*2.4, 2*2.6 ,2*2.8, 2*3.0  ]
 
 print "List of BR points:"
 print list 
@@ -112,6 +153,7 @@ os.system('mkdir '+sysDir+'/Bu2DsPhi_Fitter_copy/batch')
 os.system('mkdir '+sysDir+'/Bu2DsPhi_Fitter_copy/roodatasets')
 os.system('mkdir '+sysDir+'/Bu2DsPhi_Fitter_copy/data')
 os.system('mkdir '+sysDir+'/Bu2DsPhi_Fitter_copy/results')
+os.system('mkdir '+sysDir+'/Bu2DsPhi_Fitter_copy/results/limits')
 os.system('mkdir '+sysDir+'/Bu2DsPhi_Fitter_copy/data/FullSel')
 os.system("cp -r /home/hadavizadeh/Bc_Analysis/DataStripping/B_PhiD/Git_Fit/Test/DsPhiFitter/roodatasets/*.root "+sysDir+"/Bu2DsPhi_Fitter_copy/roodatasets")
 os.system("cp -r /home/hadavizadeh/Bc_Analysis/DataStripping/B_PhiD/Git_Fit/Test/DsPhiFitter/src/* "+sysDir+"/Bu2DsPhi_Fitter_copy/src")
@@ -125,12 +167,13 @@ sysDirName = sysDir+"/Bu2DsPhi_Fitter_copy"
 os.system('cd '+sysDirName + '/batch')
 
 for brpoint in list:
-    makeSubmitScript(sysDirName+ '/batch', str(brpoint), variableList ,str(numWalltime), brstring, inputMode,extraSettings,str(brpoint)) 
+    seed = brpoint*10000
+    makeSubmitScript(sysDirName+ '/batch', str(seed) , variableList ,str(numWalltime), brstring, inputMode,extraSettings,str(brpoint)) 
     
-    print 'Submitting job '+str(jobCounter)+" with seed "+str(brpoint)
+    print 'Submitting job '+str(jobCounter)+" with seed "+str(seed)
     time.sleep(0.1)
     os.chdir(sysDirName + '/batch')
-    os.system('qsub -N Likelihood_'+str(brpoint)+' BatchSubmit_'+str(brpoint)+'.sh')
+    os.system('qsub -N Likelihood_'+str(brpoint)+' BatchSubmit_'+str(seed)+'.sh')
     #print 'qsub -N Likelihood_'+str(brpoint)+' BatchSubmit_'+str(brpoint)+'.sh'
     print
     jobCounter+=1  

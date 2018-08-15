@@ -24,7 +24,7 @@ void plot(std::string, std::string, std::string, std::string);
 }
 */
 
-void plot_punzi(std::string datatype="MC",std::string method="BDT",std::string mode = "Ds2KKPi",std::string years= ""){
+void plot_significance_old(std::string datatype="MC",std::string method="BDT",std::string mode = "Ds2KKPi",std::string years= ""){
   oneD = "oneD";
   cont = "cont";
   surf = "surf";
@@ -557,8 +557,7 @@ void plot_punzi(std::string datatype="MC",std::string method="BDT",std::string m
     //plot_1D(count,cut_MC_ar,n_signi_ar,dir);
     //plot_1D(count,cut_MC_ar,n_pursig_ar,dir);
   } else {
-    plot_cont(count,cut_ds_ar,cut_phi_ar,n_punzi_ar,config);
-    //plot_cont(count,cut_ds_ar,cut_phi_ar,n_sigaj_ar,config);
+    plot_cont(count,cut_ds_ar,cut_phi_ar,n_sigaj_ar,config);
     //plot_cont(count,cut_ds_ar,cut_phi_ar,n_signi_ar,dir);
     //plot_cont(count,cut_ds_ar,cut_phi_ar,n_sigaj_ar,dir);
     //plot_cont(count,cut_ds_ar,cut_phi_ar,n_pursig_ar,dir);
@@ -569,7 +568,7 @@ std::cout<<"Done" <<std::endl;
 
 void plot_1D(int n_p,double cut_value_MC [],double Punzi_1D [], std::map<std::string,std::string> config){
   SetLHCbStyle(oneD);
-  TCanvas *cav_punzi = new TCanvas(Form("%s_%s_punzi_%s",config["mode"].c_str(),config["method"].c_str(),config["years"].c_str()),Form("%s %s Punzi as function of cut value",config["mode"].c_str(),config["method"].c_str()),200,10,700,500);
+  TCanvas *cav_punzi = new TCanvas(Form("%s_%s_significance_%s",config["mode"].c_str(),config["method"].c_str(),config["years"].c_str()),Form("%s %s Punzi as function of cut value",config["mode"].c_str(),config["method"].c_str()),200,10,700,500);
   TGraph  *gr_punzi  = new TGraph(n_p, cut_value_MC, Punzi_1D);
   gr_punzi->SetTitle(Form("Punzi    S/(5/2 + sqrt(B));MC %s Cut Value;S/sqrt(S+B)",config["method"].c_str()));  
   gr_punzi->Draw("AP");
@@ -581,7 +580,7 @@ void plot_1D(int n_p,double cut_value_MC [],double Punzi_1D [], std::map<std::st
 void plot_surf(int n_p,double cut_value_1D_Ds[],double cut_value_1D_Phi[],double Punzi_2D [], std::map<std::string,std::string> config){
   SetLHCbStyle(surf);
   std::cout << "Set Style" << std::endl;
-  TCanvas *cav_punzi = new TCanvas(Form("%s_%s_punzi_%s",config["mode"].c_str(),config["method"].c_str(),config["years"].c_str()),Form("%s %s Punzi as function of cut value",config["mode"].c_str(),config["method"].c_str()),200,10,700,500);
+  TCanvas *cav_punzi = new TCanvas(Form("%s_%s_significance_%s",config["mode"].c_str(),config["method"].c_str(),config["years"].c_str()),Form("%s %s Punzi as function of cut value",config["mode"].c_str(),config["method"].c_str()),200,10,700,500);
   std::cout << "Made Canvas" << std::endl;
   TGraph2D *gr_punzi = new TGraph2D(n_p, cut_value_1D_Ds, cut_value_1D_Phi, Punzi_2D); 
   std::cout << "Made TGraph2D" << std::endl;  
@@ -600,10 +599,9 @@ void plot_surf(int n_p,double cut_value_1D_Ds[],double cut_value_1D_Phi[],double
 
 void plot_cont(int n_p,double cut_value_1D_Ds[],double cut_value_1D_Phi[],double Punzi_2D [], std::map<std::string,std::string> config){
   SetLHCbStyle(cont);
-  TCanvas *cav_punzi3 = new TCanvas(Form("%s_%s_punzi_%s",config["mode"].c_str(),config["method"].c_str(),config["years"].c_str()),Form("%s %s Punzi as function of cut value",config["mode"].c_str(),config["method"].c_str()),200,10,700,500);
+  TCanvas *cav_punzi3 = new TCanvas(Form("%s_%s_significance_%s",config["mode"].c_str(),config["method"].c_str(),config["years"].c_str()),Form("%s %s Punzi as function of cut value",config["mode"].c_str(),config["method"].c_str()),200,10,700,500);
   TGraph2D *gr_punzi2 = new TGraph2D(n_p, cut_value_1D_Ds, cut_value_1D_Phi, Punzi_2D);   
-  gr_punzi2->SetTitle(Form("Punzi    S/(5/2 + sqrt(B));D_{s}^{+}
-   %s Requirement;#phi %s Requirement;S/sqrt(S+B)",config["method"].c_str(),config["method"].c_str())); 
+  gr_punzi2->SetTitle(Form("Punzi    S/(5/2 + sqrt(B));D %s Cut Value;D0 %s Cut Value;S/sqrt(S+B)",config["method"].c_str(),config["method"].c_str())); 
   gr_punzi2->Draw("colz");
 
   cav_punzi3->Print(Form("%s%s_cont.eps",config["dir"].c_str(),cav_punzi3->GetName()));

@@ -2,8 +2,11 @@ void SetLHCbStyle(std::string);
 #include "tools.h"
 #include <stdlib.h> 
 // ===========================================================================
+std::pair<double,double> GetLimits(double,double,double,double,double,double,double,double);
+double Getx1(double,double,double);
+double Getx2(double,double,double);
 
-void plotSensitivity(std::string mode = "DsPhi"){
+void plotFCBands(std::string mode = "DsPhi"){
 
 
     std::string name;
@@ -11,12 +14,16 @@ void plotSensitivity(std::string mode = "DsPhi"){
     if (mode == "DKst0") name = "it{B^{+}#rightarrowD^{+}K^{*0}}";
 
     std::cout << "Using mode name: " << mode << " Name: " << name << std::endl;
+    SetLHCbStyle("norm");
 
     std::string sensitivityDir = "sensitivityDir/";
     std::vector<std::string> fileName;
     getdir(sensitivityDir,fileName);
     std::map<double,int> gen_count;
-    std::map<double,std::vector<double>> gen_br;
+    std::map<double,std::vector<double>> map_gen_br_fit_br;
+    std::map<double,std::vector<double>> map_gen_br_fit_stat;
+    std::map<double,std::vector<double>> map_gen_br_fit_stat_hi;
+    std::map<double,std::vector<double>> map_gen_br_fit_stat_lo;
 
     int n_points = 0;
     for(std::vector<std::string>::iterator it=fileName.begin();it!=fileName.end();it++){
@@ -24,8 +31,12 @@ void plotSensitivity(std::string mode = "DsPhi"){
         n_points++;
     }
 
-    double* n_gen_br   = new double[n_points];
-    double* n_fit_br   = new double[n_points];
+    double* n_gen_br       = new double[n_points];
+    double* n_fit_br       = new double[n_points];
+    double* n_fit_stat     = new double[n_points];
+    double* n_fit_stat_hi  = new double[n_points];
+    double* n_fit_stat_lo  = new double[n_points];
+
     int n_points_new = 0;
     int count = 0;
     int nFits=0;
@@ -51,61 +62,36 @@ void plotSensitivity(std::string mode = "DsPhi"){
         if(result->covQual()<3){continue;}
  
         RooRealVar* param_final = (RooRealVar*) (result->floatParsFinal()).find("Branching_fraction");
-        double fitted_br = param_final->getVal();
-        if(count%1000==0)  std::cout << "Br: " << br << " Fitted Br: " << fitted_br << " seed: " << seed << " Number: " << num << std::endl;
-        n_gen_br[count] = br;
-        n_fit_br[count] = fitted_br;
+        double fitted_br   = param_final->getVal();
+        double fitted_stat = param_final->getError();
+        double fitted_stat_hi = param_final->getAsymErrorHi();
+        double fitted_stat_lo = param_final->getAsymErrorLo();
+        if(count%1000==0)  std::cout << "Br: " << br << " Fitted Br: " << fitted_br << " +/- " << fitted_stat <<" (+" <<  fitted_stat_hi <<"," <<  fitted_stat_lo << ") seed: " << seed << " Number: " << num << std::endl;
+        n_gen_br[count]      = br;
+        n_fit_br[count]      = fitted_br;
+        n_fit_stat[count]    = fitted_stat;
+        n_fit_stat_hi[count] = fitted_stat_hi;
+        n_fit_stat_lo[count] = fitted_stat_lo;
         count++ ;
         n_points_new++;
         gen_count[br]++;
-        gen_br[br].push_back(fitted_br);
-
-
-        /*
-
-        TIter nextkey(newfile.GetListOfKeys());
-        TKey *key;
-        while((key=(TKey*)nextkey())){
-          if(std::string(key->GetClassName())!=std::string("RooFitResult")) continue;
-          RooFitResult *r = (RooFitResult*)key->ReadObj();
-          //if(std::string(r->GetName()) != std::string("toy_withSig")) continue;
-          //if( !newfile->GetListOfKeys()->Contains("toy_withSig"))  ) continue; 
-          std::cout << "RooFitResult Name: " << std::endl;
-          r->Print();
-          nFits++;      
-          if(r->covQual()<2){nBad++;continue;}
-          if(r->covQual()<3){nFPD++;continue;}
-          if(r->status()!=0){nBadMINOS++;}//continue;}
-          
-          RooRealVar* param_final = (RooRealVar*) (r->floatParsFinal()).find("Branching_fraction");
-          double fitted_br = param_final->getVal();
-
-        
-
-        
-        TFile *newfile = TFile::Open((sensitivityDir+*it).c_str());
-        if(!newfile){
-          std::cout << "File not found: " << sensitivityDir+*it << std::endl;
-          continue;
-        }
-        RooFitResult* result = (RooFitResult*)newfile->Get("toy_withSig");
-        RooRealVar* param_final = (RooRealVar*) (result->floatParsFinal()).find("Branching_fraction");
-        double fitted_br = param_final->getVal();
-        
-
-          std::cout << "Br: " << br << " Fitted Br: " << fitted_br << " seed: " << seed << " Number: " << num << std::endl;
-          n_gen_br[count] = br;
-          n_fit_br[count] = fitted_br;
-          count++ ;
-          gen_count[br]++;
-          gen_br[br].push_back(fitted_br);
-          //newfile->Close();
-        }
-      */
+        map_gen_br_fit_br[br].push_back(fitted_br);
+        map_gen_br_fit_stat[br].push_back(fitted_stat);
+        map_gen_br_fit_stat_hi[br].push_back(fitted_stat_hi);
+        map_gen_br_fit_stat_lo[br].push_back(fitted_stat_lo);
 
     }
 
-    int n_gen_points = gen_br.size();
+    int n_gen_points = map_gen_br_fit_br.size();
+    
+    double* gen_br        = new double[n_gen_points];
+    double* fit_br        = new double[n_gen_points];
+    double* fit_stat      = new double[n_gen_points];
+    double* fit_stat_hi   = new double[n_gen_points];
+    double* fit_stat_lo   = new double[n_gen_points];
+
+
+   /*
     std::cout << "Gen points: " << n_gen_points <<std::endl;
     double* n_gen_line_br   = new double[n_gen_points];
     double* n_fit_line_br   = new double[n_gen_points];
@@ -137,15 +123,337 @@ void plotSensitivity(std::string mode = "DsPhi"){
     double* FC_upper_line_95   = new double[n_gen_points];
 
 
+    
+    
+    */
+
+    // First plot Nfit vs. Ngen and Sigmafit vs. Ngen 
     count = 0;
-    SetLHCbStyle("norm");
-
-
-    for(std::map<double,std::vector<double>>::iterator it=gen_br.begin();it!=gen_br.end();it++){ 
+    for(std::map<double,std::vector<double>>::iterator it=map_gen_br_fit_br.begin();it!=map_gen_br_fit_br.end();it++){ 
         std::vector<double> temp = it->second;
         double gen_value = it->first;
-        std::sort (temp.begin(), temp.end());
+        std::sort(temp.begin(), temp.end());
+        std::vector<double> temp_stat    =  map_gen_br_fit_stat[gen_value];
+        std::vector<double> temp_stat_hi =  map_gen_br_fit_stat_hi[gen_value];
+        std::vector<double> temp_stat_lo =  map_gen_br_fit_stat_lo[gen_value];
 
+        //TCanvas *cav = new TCanvas(Form("Canvas_%d",count),Form("Distribution_%d",count),200,10,1200,500);
+        //cav->Divide(4,1);
+        //cav->cd(1);
+        
+        // Draw fitted value
+        TH1D *h_temp = new TH1D(Form("h_fit_%d",count), "", 100,-10.0,20.0);
+        for(int i = 0; i < temp.size(); i++){
+          h_temp->Fill(temp[i]);
+        }
+        h_temp->Draw();
+        
+        TF1 *gaussian = new TF1("Gaussian","gaus",-10.0,20);
+        h_temp->Fit("Gaussian","Q0R");
+        double mean  = gaussian->GetParameter(1);
+        double sigma = gaussian->GetParameter(2);
+        const double* err=gaussian->GetParErrors();
+        double meanerr=err[1];
+        double sigmaerr=err[2];
+        gaussian->SetLineColor(kBlue); 
+        gaussian->Draw("same");
+        TPaveLabel *pav1 = new TPaveLabel(0.5,0.89,0.93,0.94,Form("#bf{Mean: } %f #pm %f", mean,  meanerr),"NDC");
+        TPaveLabel *pav2 = new TPaveLabel(0.5,0.81,0.93,0.86,Form("#bf{Sigma:} %f #pm %f",sigma, sigmaerr),"NDC");
+        pav1->SetTextColor(kRed); pav2->SetTextColor(kRed);
+        pav1->SetBorderSize(0);   pav2->SetBorderSize(0);
+        //pav1->SetFillStyle(4000); pav2->SetFillStyle(4000);
+        pav1->SetFillColor(0);    pav2->SetFillColor(0);
+        pav1->Draw();             pav2->Draw();
+
+        // Draw stat error
+        //cav->cd(2);
+        TH1D *h_temp_stat = new TH1D(Form("h_fit_stat_%d",count), "", 100,0.0,5.0);
+        for(int i = 0; i < temp_stat.size(); i++){
+          h_temp_stat->Fill(temp_stat[i]);
+        }
+        h_temp_stat->Draw();  
+
+        TF1 *gaussian2 = new TF1("Gaussian","gaus",-10.0,20);
+        h_temp_stat->Fit("Gaussian","Q0R");
+        double mean_stat  = gaussian2->GetParameter(1);
+        double sigma_stat = gaussian2->GetParameter(2);
+        err=gaussian2->GetParErrors();
+        meanerr=err[1];
+        sigmaerr=err[2];
+        gaussian2->SetLineColor(kBlue); 
+        gaussian2->Draw("same");
+        TPaveLabel *pav3 = new TPaveLabel(0.5,0.89,0.93,0.94,Form("#bf{Mean: } %f #pm %f", mean_stat,  meanerr),"NDC");
+        TPaveLabel *pav4 = new TPaveLabel(0.5,0.81,0.93,0.86,Form("#bf{Sigma:} %f #pm %f",sigma_stat, sigmaerr),"NDC");
+        pav3->SetTextColor(kRed); pav4->SetTextColor(kRed);
+        pav3->SetBorderSize(0);   pav4->SetBorderSize(0);
+        //pav3->SetFillStyle(4000); pav4->SetFillStyle(4000);
+        pav3->SetFillColor(0);    pav4->SetFillColor(0);
+        pav3->Draw();             pav4->Draw();      
+        
+        // Draw stat error hi
+        //cav->cd(3);
+        TH1D *h_temp_stat_hi = new TH1D(Form("h_fit_stat_hi_%d",count), "", 100,-1.0,5.0);
+        for(int i = 0; i < temp_stat_hi.size(); i++){
+          h_temp_stat_hi->Fill(temp_stat_hi[i]);
+        }
+        h_temp_stat_hi->Draw();     
+
+        TF1 *gaussian3 = new TF1("Gaussian","gaus",-1.0,5.0);
+        h_temp_stat_hi->Fit("Gaussian","Q0R");
+        double mean_stat_hi  = gaussian3->GetParameter(1);
+        double sigma_stat_hi = gaussian3->GetParameter(2);
+        err=gaussian3->GetParErrors();
+        meanerr=err[1];
+        sigmaerr=err[2];
+        gaussian3->SetLineColor(kBlue); 
+        gaussian3->Draw("same");
+        TPaveLabel *pav5 = new TPaveLabel(0.5,0.89,0.93,0.94,Form("#bf{Mean: } %f #pm %f", mean_stat_hi,  meanerr),"NDC");
+        TPaveLabel *pav6 = new TPaveLabel(0.5,0.81,0.93,0.86,Form("#bf{Sigma:} %f #pm %f",sigma_stat_hi, sigmaerr),"NDC");
+        pav5->SetTextColor(kRed); pav6->SetTextColor(kRed);
+        pav5->SetBorderSize(0);   pav6->SetBorderSize(0);
+        //pav5->SetFillStyle(4000); pav6->SetFillStyle(4000);
+        pav5->SetFillColor(0);    pav6->SetFillColor(0);
+        pav5->Draw();             pav6->Draw();    
+        
+        // Draw stat error lo
+        //cav->cd(4);
+        TH1D *h_temp_stat_lo = new TH1D(Form("h_fit_stat_lo_%d",count), "", 100,-1.0,5.0);
+        for(int i = 0; i < temp_stat_lo.size(); i++){
+          h_temp_stat_lo->Fill(-temp_stat_lo[i]);
+        }
+        h_temp_stat_lo->Draw();
+
+        TF1 *gaussian4 = new TF1("Gaussian","gaus",-1.0,5.0);
+        h_temp_stat_lo->Fit("Gaussian","Q0R");
+        double mean_stat_lo  = gaussian4->GetParameter(1);
+        double sigma_stat_lo = gaussian4->GetParameter(2);
+        err=gaussian4->GetParErrors();
+        meanerr=err[1];
+        sigmaerr=err[2];
+        gaussian4->SetLineColor(kBlue); 
+        gaussian4->Draw("same");
+        TPaveLabel *pav7 = new TPaveLabel(0.5,0.89,0.93,0.94,Form("#bf{Mean: } %f #pm %f", mean_stat_lo,  meanerr),"NDC");
+        TPaveLabel *pav8 = new TPaveLabel(0.5,0.81,0.93,0.86,Form("#bf{Sigma:} %f #pm %f",sigma_stat_lo, sigmaerr),"NDC");
+        pav7->SetTextColor(kRed); pav8->SetTextColor(kRed);
+        pav7->SetBorderSize(0);   pav8->SetBorderSize(0);
+        pav7->SetFillColor(0);    pav8->SetFillColor(0);
+
+        //pav7->SetFillStyle(4000); pav8->SetFillStyle(4000);
+        pav7->Draw();             pav8->Draw();  
+
+        std::cout << "Gen BR: " << gen_value << " Length: " << temp.size() << "\t Mean: " << mean<< "\tStat: " << mean_stat<<"\t(+" << mean_stat_hi<< ",-"<< mean_stat_lo<<")" << std::endl;
+
+        //Add means to arrays
+        gen_br[count]        = gen_value;
+        fit_br[count]        = mean;
+        fit_stat[count]      = mean_stat*mean_stat;
+        fit_stat_hi[count]   = mean_stat_hi*mean_stat_hi;
+        fit_stat_lo[count]   = mean_stat_lo*mean_stat_lo;
+
+        count++;
+    }
+        
+    //TCanvas *cav2 = new TCanvas("Canvas_trends","Distribution_trends",200,10,1200,500);
+    //cav2->Divide(4,1);
+    
+    //cav2->cd(1);
+    TGraph* gr_fit_br = new TGraph(n_gen_points, gen_br, fit_br);
+    gr_fit_br->Draw("AP");
+    TF1 *fitline_br = new TF1("fitline_br","[0]+[1]*x",0.0,8.0); 
+    gr_fit_br->Fit("fitline_br","Q0R");
+    double p0_mean = fitline_br->GetParameter(0);
+    double p1_mean = fitline_br->GetParameter(1);
+    fitline_br->SetLineColor(kRed);
+    fitline_br->Draw("same");
+    err=fitline_br->GetParErrors();
+    double p0_meanerr=err[0];
+    double p1_meanerr=err[1];
+    std::cout << "p0_mean:  " << p0_mean << "\t+/- " << p0_meanerr <<std::endl;
+    std::cout << "p1_mean:  " << p1_mean << "\t+/- " << p1_meanerr <<std::endl;
+
+    //cav2->cd(2);
+    TGraph* gr_fit_stat = new TGraph(n_gen_points, gen_br, fit_stat);
+    gr_fit_stat->Draw("AP");
+    TF1 *fitline_stat = new TF1("fitline_stat","[0]+[1]*x",0.0,8.0); 
+    gr_fit_stat->Fit("fitline_stat","Q0R");
+    double p0_stat = fitline_stat->GetParameter(0);
+    double p1_stat = fitline_stat->GetParameter(1);
+    fitline_stat->SetLineColor(kRed);
+    fitline_stat->Draw("same");
+    err=fitline_stat->GetParErrors();
+    double p0_staterr=err[0];
+    double p1_staterr=err[1];
+    std::cout << "p0_stat:  " << p0_stat << "\t+/- " << p0_staterr <<std::endl;
+    std::cout << "p1_stat:  " << p1_stat << "\t+/- " << p1_staterr <<std::endl;
+
+
+    //cav2->cd(3);
+    TGraph* gr_fit_stat_hi = new TGraph(n_gen_points, gen_br, fit_stat_hi);
+    gr_fit_stat_hi->Draw("AP");    
+    TF1 *fitline_stat_hi = new TF1("fitline_stat_hi","[0]+[1]*x",0.0,8.0); 
+    gr_fit_stat_hi->Fit("fitline_stat_hi","Q0R");
+    double p0_stat_hi = fitline_stat_hi->GetParameter(0);
+    double p1_stat_hi = fitline_stat_hi->GetParameter(1);
+    fitline_stat_hi->SetLineColor(kRed);
+    fitline_stat_hi->Draw("same");
+    err=fitline_stat_hi->GetParErrors();
+    double p0_stat_hierr=err[0];
+    double p1_stat_hierr=err[1];
+    std::cout << "p0_stat_hi:  " << p0_stat_hi << "\t+/- " << p0_stat_hierr <<std::endl;
+    std::cout << "p1_stat_hi:  " << p1_stat_hi << "\t+/- " << p1_stat_hierr <<std::endl;
+
+
+    //cav2->cd(4);
+    TGraph* gr_fit_stat_lo = new TGraph(n_gen_points, gen_br, fit_stat_lo);
+    gr_fit_stat_lo->Draw("AP");
+    TF1 *fitline_stat_lo = new TF1("fitline_stat_lo","[0]+[1]*x",0.0,8.0); 
+    gr_fit_stat_lo->Fit("fitline_stat_lo","Q0R");
+    double p0_stat_lo = fitline_stat_lo->GetParameter(0);
+    double p1_stat_lo = fitline_stat_lo->GetParameter(1);
+    fitline_stat_lo->SetLineColor(kRed);
+    fitline_stat_lo->Draw("same");
+    err=fitline_stat_lo->GetParErrors();
+    double p0_stat_loerr=err[0];
+    double p1_stat_loerr=err[1];
+    std::cout << "p0_stat_lo:  " << p0_stat_lo << "\t+/- " << p0_stat_loerr <<std::endl;
+    std::cout << "p1_stat_lo:  " << p1_stat_lo << "\t+/- " << p1_stat_loerr <<std::endl;
+
+    double p0_sys = 0.78;
+    double p1_sys = 0.0;
+    double CL = 0.95;
+
+    //std::pair<double,double> limits1 = GetLimits(2.0,p0_mean,p1_mean,p0_stat,p1_stat,p0_sys,p1_sys,CL);
+    //std::pair<double,double> limits2 = GetLimits(4.0,p0_mean,p1_mean,p0_stat,p1_stat,p0_sys,p1_sys,CL);
+    //std::pair<double,double> limits3 = GetLimits(6.0,p0_mean,p1_mean,p0_stat,p1_stat,p0_sys,p1_sys,CL);
+
+    int n_plot_points = 20;
+    double gen_min = 0.1;
+    double gen_max = 7.0;
+
+    double* FC_gen           = new double[n_plot_points];
+    double* FC_95_stat_lower = new double[n_plot_points];
+    double* FC_95_stat_upper = new double[n_plot_points];
+    double* FC_95_syst_lower = new double[n_plot_points];
+    double* FC_95_syst_upper = new double[n_plot_points];
+    double* FC_90_stat_lower = new double[n_plot_points];
+    double* FC_90_stat_upper = new double[n_plot_points];
+    double* FC_90_syst_lower = new double[n_plot_points];
+    double* FC_90_syst_upper = new double[n_plot_points];
+    count = 0;
+
+    for(int i = 0; i<n_plot_points; i++){
+        double gen_br_temp = gen_min + i*(gen_max-gen_min)/n_plot_points;
+        FC_gen[count] = gen_br_temp;
+        std::pair<double,double> limits_90_stat = GetLimits(gen_br_temp,p0_mean,p1_mean,p0_stat,p1_stat,0.0,   0.0,   0.90);
+        std::pair<double,double> limits_95_stat = GetLimits(gen_br_temp,p0_mean,p1_mean,p0_stat,p1_stat,0.0,   0.0,   0.95);
+        std::pair<double,double> limits_95_syst = GetLimits(gen_br_temp,p0_mean,p1_mean,p0_stat,p1_stat,p0_sys,p1_sys,0.95);
+
+        FC_95_stat_lower[count] = limits_95_stat.first;
+        FC_95_stat_upper[count] = limits_95_stat.second;
+        
+        FC_90_stat_lower[count] = limits_90_stat.first;
+        FC_90_stat_upper[count] = limits_90_stat.second;
+        
+        FC_95_syst_lower[count] = limits_95_syst.first;
+        FC_95_syst_upper[count] = limits_95_syst.second;
+        
+        std::cout << "Gen BR: " << gen_br_temp << "\t(" <<  limits_95_stat.first << "," << limits_95_stat.second<<")" <<std::endl;
+
+        count++; 
+    }
+    
+    TCanvas *cav = new TCanvas("Canvas_FC","Canvas_FC",200,10,700,500);
+
+
+    TGraph* gr_95_stat_lower  = new TGraph(n_plot_points, FC_95_stat_lower, FC_gen);
+    TGraph* gr_95_stat_upper  = new TGraph(n_plot_points, FC_95_stat_upper, FC_gen);
+
+    TGraph* gr_90_stat_lower  = new TGraph(n_plot_points, FC_90_stat_lower, FC_gen);
+    TGraph* gr_90_stat_upper  = new TGraph(n_plot_points, FC_90_stat_upper, FC_gen);
+
+    TGraph* gr_95_syst_lower  = new TGraph(n_plot_points, FC_95_syst_lower, FC_gen);
+    TGraph* gr_95_syst_upper  = new TGraph(n_plot_points, FC_95_syst_upper, FC_gen);
+
+    gr_95_syst_lower->SetLineStyle(kDashed);
+    gr_95_syst_upper->SetLineStyle(kDashed);
+
+
+    TGraph *grshade_95 = new TGraph(2*n_plot_points);
+    for (int i=0;i<n_plot_points;i++) {
+      grshade_95->SetPoint(i,FC_95_stat_upper[i],FC_gen[i]);
+      grshade_95->SetPoint(n_plot_points+i,FC_95_stat_lower[n_plot_points-i-1],FC_gen[n_plot_points-i-1]);
+    }
+    grshade_95->SetFillColor(kYellow);
+
+    TGraph *grshade_90 = new TGraph(2*n_plot_points);
+    for (int i=0;i<n_plot_points;i++) {
+      grshade_90->SetPoint(i,FC_90_stat_upper[i],FC_gen[i]);
+      grshade_90->SetPoint(n_plot_points+i,FC_90_stat_lower[n_plot_points-i-1],FC_gen[n_plot_points-i-1]);
+    }
+    grshade_90->SetFillColor(kGreen);
+
+    TMultiGraph *mg = new TMultiGraph();
+    mg->SetTitle(Form("Sensitivity %s;Fitted #it{B}(%s) (#times10^{-7});Generated #it{B}(%s) (#times10^{-7})",name.c_str(),name.c_str(),name.c_str()));
+
+    mg->Add(grshade_95, "F");
+    mg->Add(grshade_90, "F");
+    mg->Add(gr_90_stat_lower, "L");
+    mg->Add(gr_90_stat_upper, "L");
+    mg->Add(gr_95_stat_lower, "L");
+    mg->Add(gr_95_stat_upper, "L");
+    mg->Add(gr_95_syst_lower, "L");
+    mg->Add(gr_95_syst_upper, "L");
+    mg->Draw("A");
+
+    mg->GetXaxis()->SetRangeUser(-10.0,15.0);
+    mg->GetYaxis()->SetRangeUser(0.5,7.0);
+
+
+    TLine *line_diagonal = new TLine(0.0,0.0,7.0,7.0); 
+    line_diagonal->SetLineStyle(kDashed);
+    line_diagonal->SetLineWidth(2);
+    line_diagonal->SetLineColor(kWhite);
+    line_diagonal->Draw();
+
+    //double limit     = 4.45;
+    //double limit_sys = 4.85;
+
+    //double limit     = 3.8;
+    //double limit_sys = 4.2;
+
+    double limit     = 4.6;
+    double limit_sys = 4.9;
+
+    TLine *line = new TLine(1.16,0.1,1.16,limit_sys);
+    line->SetLineWidth(2);
+    line->SetLineColor(kRed);
+    line->Draw();    
+
+    TLine *line2 = new TLine(-10.0,limit,1.16,limit);
+    line2->SetLineStyle(kDashed);
+    line2->SetLineWidth(2);
+    line2->SetLineColor(kRed);
+    line2->Draw();
+
+
+    TLine *line4 = new TLine(-10.0,limit_sys,1.16,limit_sys);
+    line4->SetLineStyle(kDashed);
+    line4->SetLineWidth(2);
+    line4->SetLineColor(kRed);
+    line4->Draw();
+
+
+
+    gPad->RedrawAxis();
+
+    TLegend* leg = new TLegend(0.65,0.2,0.92,0.4);
+    //TLegend* leg = new TLegend(0.2,0.44,0.5,0.65);
+    leg->AddEntry(grshade_90,"90% CL Band","f");
+    leg->AddEntry(grshade_95,"95% CL Band","f");
+    leg->AddEntry(gr_95_syst_lower,"With Systematics","l");
+    leg->Draw();
+
+        /*  
         std::cout << "Gen BR: " << gen_value << " Length: " << temp.size()<< " Limit point: " << temp.size()*0.05 << " Rounded: " << floor(temp.size()*0.05 + 0.5) << " Value: " << temp[floor(temp.size()*0.05 + 0.5)-1] << std::endl;
         
         //std::cout << "Values: [" ; for(std::vector<double>::iterator itv=temp.begin();itv!=temp.end();itv++){std::cout << *itv <<", ";} std::cout << "]"<< std::endl;
@@ -311,8 +619,8 @@ void plotSensitivity(std::string mode = "DsPhi"){
         std::cout <<"Integral: "<< integral_90<< std::endl;
 
 
-        TPaveLabel *pav1 = new TPaveLabel(0.2,0.89,0.93,0.94,Form("#bf{Mean: } %f #pm %f", mean,  meanerr),"NDC");
-        TPaveLabel *pav2 = new TPaveLabel(0.2,0.81,0.93,0.86,Form("#bf{Sigma:} %f #pm %f",sigma, sigmaerr),"NDC");
+        TPaveLabel *pav1 = new TPaveLabel(0.5,0.89,0.93,0.94,Form("#bf{Mean: } %f #pm %f", mean,  meanerr),"NDC");
+        TPaveLabel *pav2 = new TPaveLabel(0.5,0.81,0.93,0.86,Form("#bf{Sigma:} %f #pm %f",sigma, sigmaerr),"NDC");
         pav1->SetBorderSize(0);   pav2->SetBorderSize(0);
         pav1->SetFillStyle(1001); pav2->SetFillStyle(1001);
         pav1->SetFillColor(0);    pav2->SetFillColor(0); 
@@ -420,13 +728,13 @@ void plotSensitivity(std::string mode = "DsPhi"){
     }
 
     grshade2->SetFillColor(kGreen);
-/*
+
    //grshade->SetFillStyle(3013);
    grshade->SetFillColor(16);
    grshade->Draw("l");
    gr_sensitivity_line->Draw("l");
    gr_sensitivity_line_lower->Draw("l");
-*/
+
     //gr_sensitivity_line->Draw("AL");
 
     TMultiGraph *mg = new TMultiGraph();
@@ -449,13 +757,7 @@ void plotSensitivity(std::string mode = "DsPhi"){
     mg->Draw("A");
 
     mg->GetXaxis()->SetRangeUser(-4.0,15.0);
-    mg->GetYaxis()->SetRangeUser(0.2,7.0);
-    mg->GetXaxis()->SetTitleSize(0.05);
-    mg->GetYaxis()->SetTitleSize(0.05);
-    mg->GetXaxis()->SetTitleOffset(1.2);
-    mg->GetYaxis()->SetTitleOffset(1.2);
-    mg->GetXaxis()->SetLabelSize(0.05);
-    mg->GetYaxis()->SetLabelSize(0.05);
+    mg->GetYaxis()->SetRangeUser(0.1,7.0);
 
     gr_sensitivity_line->SetLineColor(kBlack);
     gr_sensitivity_line_sys->SetLineColor(kBlack);
@@ -479,7 +781,7 @@ void plotSensitivity(std::string mode = "DsPhi"){
     //gr_sensitivity_line2->SetLineColor(kGreen);
     //gr_sensitivity_line2_lower->SetLineColor(kGreen);
 
-    /*
+    
     
     gr_sensitivity->SetMarkerStyle(2);
     gr_sensitivity_line->SetLineColor(kYellow);
@@ -491,7 +793,7 @@ void plotSensitivity(std::string mode = "DsPhi"){
     gr_sensitivity_line2->SetLineColor(kGreen);
     gr_sensitivity_line2_lower->SetLineColor(kGreen);
 
-*/
+
 
     TLine *line_diagonal = new TLine(0.0,0.0,7.0,7.0); 
     line_diagonal->SetLineStyle(kDashed);
@@ -505,10 +807,10 @@ void plotSensitivity(std::string mode = "DsPhi"){
     //double limit     = 3.8;
     //double limit_sys = 4.2;
 
-    double limit     = 4.4;
+    double limit     = 4.6;
     double limit_sys = 4.9;
 
-    TLine *line = new TLine(1.16,0.2,1.16,limit_sys);
+    TLine *line = new TLine(1.16,0.1,1.16,limit_sys);
     line->SetLineWidth(2);
     line->SetLineColor(kRed);
     line->Draw();    
@@ -530,18 +832,90 @@ void plotSensitivity(std::string mode = "DsPhi"){
 
     gPad->RedrawAxis();
 
-    TLegend* leg = new TLegend(0.58,0.2,0.92,0.4);
+    TLegend* leg = new TLegend(0.65,0.2,0.92,0.4);
     //TLegend* leg = new TLegend(0.2,0.44,0.5,0.65);
-    leg->AddEntry(grshade2,"90% CL band","f");
-    leg->AddEntry(grshade, "95% CL band","f");
-    leg->AddEntry(gr_sensitivity_line_sys,"With syst. uncertainty","l");
+    leg->AddEntry(grshade2,"90% CL Band","f");
+    leg->AddEntry(grshade, "95% CL Band","f");
+    leg->AddEntry(gr_sensitivity_line_sys,"With Systematics","l");
     leg->Draw();
 
     cav->Print("results/Sensitivity_plot.eps");
     cav->Print("results/Sensitivity_plot.pdf");
-    cav->Print("results/Sensitivity_plot.C");
-    cav->Print("results/Sensitivity_plot.root");
-    cav->Print("results/Sensitivity_plot.png");
+
+*/
+}
+
+std::pair<double,double> GetLimits(double gen_br,
+                                   double p0_mean,
+                                   double p1_mean,
+                                   double p0_stat,
+                                   double p1_stat,
+                                   double p0_sys,
+                                   double p1_sys,
+                                   double CL){
+    double xmin = -100.0;
+    double xmax =  100.0;
+
+    //std::cout << "Calculating limit for CL: " << CL <<std::endl;
+    double mean = p0_mean + p1_mean * gen_br; 
+    double stat = sqrt(p0_stat + p1_stat * gen_br); 
+    double sys  = p0_sys  + p1_sys  * gen_br; 
+
+    double total_sigma = sqrt(pow(stat,2)+pow(sys,2));
+    //std::cout << "Using mean:  " << mean <<"\t Stat: "<< stat << "\tSys: " << sys  << "\tTotal: " << total_sigma <<std::endl;
+    
+    //TCanvas *cav = new TCanvas("Canvas_R","Canvas_R",200,10,700,500);
+
+    //TF1 *f1 = new TF1("f1" , "(x>0)*(pow(x-[0],2)/pow([1],2)) + (x<0)*((pow([0],2) - 2*[0]*x)/pow([1],2))",xmin,xmax);
+    TF1 *f2 = new TF1("f2" , "(x>0)*exp(-0.5*(pow(x-[0],2)/pow([1],2))) + (x<0)*exp(-0.5*((pow([0],2) - 2*[0]*x)/pow([1],2)))",xmin,xmax);
+    
+    f2->SetParameter(0,mean);
+    f2->SetParameter(1,total_sigma);
+    //f2->Draw();
+    double stepsize = 0.0001;
+    double maxR = 1.0;
+    double minR = 0.0001;
+    double integral = -999.0;
+    double x1 = -999.0;
+    double x2 =  999.0;
+    bool found_itergral = false;
+
+    for(double i = 0; i< (int)((maxR-minR)/stepsize); i++){
+        double R_temp = i*stepsize+minR;
+        double x1_temp = Getx1(R_temp,mean,total_sigma);
+        double x2_temp = Getx2(R_temp,mean,total_sigma);
+        double integral = f2->Integral(x1_temp,x2_temp)/f2->Integral(xmin,xmax);
+        //std::cout << "Checking R = " << R_temp << "\tx1: " << x1_temp<< "\tx2: " << x2_temp << "\tIntegral: "<<  integral <<std::endl;
+        if(integral < CL && !found_itergral){
+            x1 = x1_temp;
+            x2 = x2_temp;
+            found_itergral = true;
+            //std::cout << "===> Using Values x1: " <<  x1_temp<< "\tx2: " << x2_temp << "\tIntegral: "<<  integral <<std::endl;
+            break;
+
+        }
+    }
+
+    //delete f1;
+    std::pair<double,double> limits;
+    limits.first  = x1;
+    limits.second = x2;
+    return limits;
+}
+
+double Getx1(double R, double mean, double sigma){
+    double x1_from_gaussian = mean - sqrt(-2*pow(sigma,2)*log(R));
+
+    if(x1_from_gaussian < 0.0){
+        return (pow(mean,2) + 2*pow(sigma,2)*log(R));
+
+    } else {
+        return x1_from_gaussian;
+    }
+}
+
+double Getx2(double R, double mean, double sigma){
+    return mean + sqrt(-2*pow(sigma,2)*log(R));  
 }
 
 void SetLHCbStyle(std::string type = ""){

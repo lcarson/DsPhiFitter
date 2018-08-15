@@ -44,6 +44,7 @@ public:
     std::string DKst0;
     std::string DKst0Side;
     std::string DsPhiSide;
+    std::string DsPhiSideWide;
     std::string Helbin1;
     std::string Helbin2;
     std::string DsBDTbin1;
@@ -64,6 +65,7 @@ public:
     std::string cont;
     std::string surf;
     std::string norm;
+    std::string merged;
     std::string mergedDModes;
     //std::string buffer;
     //std::string sidebd;
@@ -121,6 +123,7 @@ public:
     std::string fixedBG_Comb_shape;
     std::string fixedBG_Comb_shape_flat;
     std::string fixedBG_Comb_shape_line;
+    std::string fixedBG_DsKK_fractions;
     std::string draw;
     std::string fixedSig_double;
     std::string fixedBG_DD0;

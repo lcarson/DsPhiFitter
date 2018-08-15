@@ -60,6 +60,7 @@ class Parameters : public Base {
   double sensitivityBR;
   bool doLikelihood;
   double likelihoodBR;
+  bool SetLimits;
   int sensitivityN;
   std::string MVAMethod; 
   std::string MVAType;

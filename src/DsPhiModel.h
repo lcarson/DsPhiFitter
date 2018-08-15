@@ -32,14 +32,18 @@ public :
 	void DefineRooCategories();
 	void DefineModel();
   RooCategory* Cat(){return cat;}
-	RooSimultaneous* Pdf(){return sim;}
-	void PrintResult();
+  RooSimultaneous* Pdf(){return sim;}
+  RooAbsReal* BranchingFraction(){return Branching_fraction_all;}
+	RooAbsReal* ConstraintParam(){return Br_syst;}
+  //RooAbsPdf*  Constraint(){return Br_syst_constrained;}
+  
+	void PrintResult(RooFitResult*);
   std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,double> > > > > > > > > GetResult();
   RooArgSet* GetParameters();
   const RooArgSet& Constraints();
-  void SetBrConstant(){Branching_fraction_all->setConstant(kTRUE);  Branching_fraction_all->setVal(0.0);  }
-  void SetBrFloating(){Branching_fraction_all->setConstant(kFALSE); Branching_fraction_all->setVal(par->sensitivityBR); Branching_fraction_all->setRange(-100.0, 10000.0);}
-  void SetBrToConstVal(double val){Branching_fraction_all->setConstant(kTRUE); Branching_fraction_all->setVal(val);}
+  void SetBrConstant(){((RooRealVar*)Branching_fraction_all)->setConstant(kTRUE);  ((RooRealVar*)Branching_fraction_all)->setVal(0.0);  }
+  void SetBrFloating(){((RooRealVar*)Branching_fraction_all)->setConstant(kFALSE); ((RooRealVar*)Branching_fraction_all)->setVal(par->sensitivityBR); ((RooRealVar*)Branching_fraction_all)->setRange(-100.0, 10000.0);}
+  void SetBrToConstVal(double val){((RooRealVar*)Branching_fraction_all)->setConstant(kTRUE); ((RooRealVar*)Branching_fraction_all)->setVal(val);}
 
 private:
   TRandom3 *rand;
@@ -112,6 +116,7 @@ private:
   */
   //Helicity Bin        DsBDTBin            PhiBDTBin            Bmode                Dmode                charge               magnet
   std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooAbsReal*> > > > > > > >     yield_peak;
+  std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooAbsReal*> > > > > > > >     yield_DsKK;
   std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooAbsReal*> > > > > > > >     yield_CB1;
   std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooAbsReal*> > > > > > > >     yield_CB2;
   std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooAbsReal*> > > > > > > >     yield_Dsa1;
@@ -127,6 +132,7 @@ private:
   std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooFormulaVar*> > > > > > > >  yield_LITTLEHORNS;
 
   std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooAbsReal*> > > > > > > >  Signal_total;
+  std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooAbsReal*> > > > > > > >  DsKK_total;
   std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooAbsReal*> > > > > > > >  Low_Mass_total;
   std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooAbsReal*> > > > > > > >  PR_total_yield;
   std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,RooAbsReal*> > > > > > > >  yield_DsstarDstar0;
@@ -231,7 +237,10 @@ private:
   std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,double> > > > > > > > > fit_results;
 
   std::map<std::string,RooAbsReal*>Branching_fraction;
-  RooRealVar* Branching_fraction_all;
+  RooAbsReal* Branching_fraction_all;
+  
+  std::map<std::string,RooAbsReal*>Branching_fraction_unblinded;
+  RooAbsReal* Branching_fraction_all_unblinded;
   
   std::map<std::string,RooAbsReal*> Asymmetry;
   RooAbsReal* Asymmetry_all;  
@@ -245,6 +254,7 @@ private:
 
   // Convolvd things 
 
+  RooRealVar* Br_syst;
 
 
 };

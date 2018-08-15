@@ -6,8 +6,8 @@ def makeSubmitScript(sysDir, seed, N, wall, brstring,inputMode):
     dirname=sysDir
     os.chdir(dirname)
     os.system("echo '#!/bin/bash' >> BatchSubmit_"+seed+".sh");
-    os.system("echo '#PBS -l cput="+wall+":00:00' >> BatchSubmit_"+seed+".sh");
-    os.system("echo '#PBS -l walltime="+wall+":00:00' >> BatchSubmit_"+seed+".sh");
+    os.system("echo '#PBS -l cput="+wall+":59:00' >> BatchSubmit_"+seed+".sh");
+    os.system("echo '#PBS -l walltime="+wall+":59:00' >> BatchSubmit_"+seed+".sh");
     os.system("echo 'source /data/lhcb/sw/scripts/lbsetup-cvmfs.sh' >> BatchSubmit_"+seed+".sh");
     os.system("echo '. SetupProject.sh Gaudi ROOT' >> BatchSubmit_"+seed+".sh");
     os.system("echo 'cd "+dirname+"/../' >> BatchSubmit_"+seed+".sh")
@@ -60,6 +60,58 @@ numJobsPerBr  = int(raw_input("Num jobs per BR value: "))
 #brValues = [0.0,2.0,4.0,6.0,8.0,10.0,12.0,14.0,16.0,18.0,20.0]
 brValues = [0.0,3.0,6.0,9.0,12.0,15.0,18.0,21.0]
 #brValues = [0.1,0.2,0.4,0.6,0.8]
+'''
+brValues = list = [0.0, 
+        1.0, 
+        2.0,
+        3.0,
+        4.0,
+        5.0,
+        6.0,
+        7.0,
+        8.0,
+        10.0,
+        11.0,
+        12.0,
+        13.0,
+        14.0,
+        15.0,
+        16.0,
+        17.0,
+        18.0,
+        19.0,
+        20.0]
+'''
+
+brValues = list = [0.0, 
+        0.5,
+        1.0, 
+        1.5, 
+        2.0,
+        2.5,
+        3.0,
+        3.5,
+        4.0,
+        4.5,
+        5.0,
+        5.5,
+        6.0,
+        6.5,
+        7.0,
+        7.5,
+        8.0,
+        8.5,
+        9.0,
+        9.5,
+        10.0
+        ]
+brValues = [  3.8 , 4.2, 4.4, 4.6]
+
+brValues = [ 0.0, 1.0, 3.0, 5.0, 7.0]
+brValues = [ 0.1, 0.2, 0.3, 0.5]
+
+
+#brValues = [1.0,3.0]
 numBrValues = len(brValues)
 print "Number of BR values used: " + str(numBrValues)
 print brValues
@@ -80,6 +132,7 @@ os.system('mkdir '+sysDir+'/Bu2DsPhi_Fitter_copy/pdfs')
 os.system('mkdir '+sysDir+'/Bu2DsPhi_Fitter_copy/sensitivityDir')
 os.system('mkdir '+sysDir+'/Bu2DsPhi_Fitter_copy/sensitivityDir/gen_vals')
 os.system('mkdir '+sysDir+'/Bu2DsPhi_Fitter_copy/sensitivityDir/text_vals')
+os.system('mkdir '+sysDir+'/Bu2DsPhi_Fitter_copy/sensitivityDir/likelihood')
 os.system('mkdir '+sysDir+'/Bu2DsPhi_Fitter_copy/batch')
 os.system('mkdir '+sysDir+'/Bu2DsPhi_Fitter_copy/roodatasets')
 os.system('mkdir '+sysDir+'/Bu2DsPhi_Fitter_copy/data')

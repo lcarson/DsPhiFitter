@@ -48,8 +48,8 @@ void plotLikelihood(std::string mode = "DsPhi"){
 
     }
 
-    double minx = 24.0; 
-    double miny = 38540.7;      // value and NLL of the approved result
+    double minx = 1.167895512; 
+    double miny = 37002.25333;      // value and NLL of the approved result
 
     n_points = values.size();
     double* n_br_sorted    = new double[n_points];
@@ -65,16 +65,41 @@ void plotLikelihood(std::string mode = "DsPhi"){
 
     SetLHCbStyle("norm");
 
-    //TCanvas *cav = new TCanvas("Canvas","Likelihood",200,10,700,500);
+    TCanvas *cav = new TCanvas("Canvas","Likelihood",200,10,700,500);
   
-    TGraph* gr_likelihood = new TGraph(count, n_br_sorted, n_lik_sorted);
+    TGraph* gr_loglikelihood = new TGraph(count, n_br_sorted, n_lik_sorted);
 
-    gr_likelihood->SetTitle(";Branching Fraction (#times 10^{-7}) ;#Delta(log(L))"); 
-    gr_likelihood->Draw("APC");
+    gr_loglikelihood->SetTitle(";#it{B(B^{+}#rightarrow D_{s}^{+}#phi)} #times 10^{-7} ;#Delta(log(Likelihood))"); 
+    //gr_loglikelihood->Draw("APC");
 
-    double MIN  = 18.0;         // minimum value of the scanned parameter
-    double MAX  = 30.0;         // maximum value
-    double Syst =  1.0;         // total systematic error
+
+    // Quick checks
+    
+    double* likelihood_temp    = new double[n_points];
+    for(int i=0; i<count; i++){
+      
+      likelihood_temp[i]=exp(-n_lik_sorted[i]);
+      std::cout << n_br_sorted[i]<< "\t"<< likelihood_temp[i] << std::endl;
+    }
+
+    TGraph* gr_likelihood_temp = new TGraph(count, n_br_sorted, likelihood_temp);
+    //gr_likelihood_temp->Draw("APC");
+
+
+
+
+    double MIN  = -10.0;         // minimum value of the scanned parameter
+    double MAX  =  20.0;         // maximum value
+    double Syst = 0.788;         // total systematic error
+
+    double* raw_significance    = new double[n_points];
+    for(int i=0; i<count; i++) raw_significance[i]=sqrt(2*n_lik_sorted[i]);
+  
+    TGraph* gr_raw_significance = new TGraph(count, n_br_sorted, raw_significance);
+
+    gr_raw_significance->SetTitle(";#it{B(B^{+}#rightarrow D_{s}^{+}#phi)} #times 10^{-7} ;#sqrt{2#Delta log(L)}"); 
+    //gr_raw_significance->Draw("APC"); //REMOVE
+
 
 
 
@@ -82,30 +107,43 @@ void plotLikelihood(std::string mode = "DsPhi"){
     double likelMAXCONV = -99999;
     double LInterpolation[5000];
     double xInterpolation[5000];
-    int    nInterpolation = 100;
+    int    nInterpolation = 500;
     double step = (MAX-MIN)/nInterpolation;
     double tmp = MIN;
+    double deltaLogLikelihood[5000]; 
+    double significance[5000];
     
+    //double LLMIN = 999999999;
+
+
     for(int i=0; i<=nInterpolation; i++){
       xInterpolation[i]=tmp;
-      LInterpolation[i]=TMath::Exp(-gr_likelihood->Eval(tmp,0,"S"));
-      //LInterpolation[i]=gr_likelihood->Eval(tmp,0,"S");
+      LInterpolation[i]=TMath::Exp(-gr_loglikelihood->Eval(tmp,0,"S"));
+      //LInterpolation[i]=gr_loglikelihood->Eval(tmp,0,"S");
       if(LInterpolation[i]>likelMAX) likelMAX = LInterpolation[i];
-      std::cout << "test: " << xInterpolation[i] << "\t " << LInterpolation[i] <<"\t Thing: " << gr_likelihood->Eval(tmp,0,"S")<<  std::endl;
-      
+      //if(LInterpolation[i]<LLMIN) LLMIN = LInterpolation[i];
+      deltaLogLikelihood[i]=-TMath::Log(LInterpolation[i]);
+      //std::cout << "test: " << xInterpolation[i] << "\t " << LInterpolation[i] <<"\t Thing: " << gr_loglikelihood->Eval(tmp,0,"S")<< "\t Thing test : " << TMath::Exp(-gr_loglikelihood->Eval(tmp,0,"S")) << std::endl; 
+      std::cout << "delta LL: " << deltaLogLikelihood[i] <<std::endl;
       tmp = tmp+step;
 
     }
 
-    TGraph *gL = new TGraph(nInterpolation,xInterpolation,LInterpolation);
-    gL->SetLineColor(2);
-    gL->SetLineWidth(4);
-    gL->SetMarkerColor(2);
-    gL->SetMarkerStyle(0);
-    gL->SetTitle(" ");
-    gL->GetXaxis()->SetTitle("Branching Fraction (#times 10^{-7})");
-    gL->GetYaxis()->SetTitle("Likelihood");
-    gL->Draw("ACsame");
+    
+    for(int i=0; i<=nInterpolation; i++) significance[i]=sqrt(2*deltaLogLikelihood[i]);
+    //for(int i=0; i<=nInterpolation; i++) LInterpolation[i] = LInterpolation[i]-LLMIN; 
+
+
+
+    TGraph *gr_likelihood = new TGraph(nInterpolation,xInterpolation,LInterpolation);
+    gr_likelihood->SetLineColor(kBlack);
+    gr_likelihood->SetLineWidth(2);
+    gr_likelihood->SetMarkerColor(2);
+    gr_likelihood->SetMarkerStyle(0);
+    gr_likelihood->SetTitle(" ");
+    gr_likelihood->GetXaxis()->SetTitle("#it{B(B^{+}#rightarrow D_{s}^{+}#phi)} #times 10^{-7}");
+    gr_likelihood->GetYaxis()->SetTitle("Likelihood");
+    gr_likelihood->Draw("ACsame");
 
 
     double zConvMIN = 999999999;
@@ -117,8 +155,8 @@ void plotLikelihood(std::string mode = "DsPhi"){
       xInterpolation[i]=t;
       double sum=0;
       for(double TAU=MIN;TAU<=MAX; TAU=TAU+step){
-        double left = gL->Eval( TAU      ,0,"S")*TMath::Gaus(t- TAU      ,0,Syst,kTRUE);
-        double right= gL->Eval((TAU+step),0,"S")*TMath::Gaus(t-(TAU+step),0,Syst,kTRUE);
+        double left = gr_likelihood->Eval( TAU      ,0,"S")*TMath::Gaus(t- TAU      ,0,Syst,kTRUE);
+        double right= gr_likelihood->Eval((TAU+step),0,"S")*TMath::Gaus(t-(TAU+step),0,Syst,kTRUE);
         sum = sum + ((left+right)/2*step);
       }
 
@@ -132,47 +170,256 @@ void plotLikelihood(std::string mode = "DsPhi"){
     for(int i=0; i<=nInterpolation; i++) zConv[i]=zConv[i]-zConvMIN;
     for(int i=0; i<=nInterpolation; i++) zConvs[i]=sqrt(2*zConv[i]);
     
-    TGraph *gConv = new TGraph(nInterpolation,xInterpolation,LConvoluted);
-    gConv->SetLineColor(4);
-    gConv->SetLineWidth(2);
-    gConv->SetLineStyle(kDashed);
-    gConv->SetMarkerColor(4);
-    gConv->SetMarkerStyle(0);
-    gConv->SetTitle("Likelihood Convoluted");
-    gConv->GetXaxis()->SetTitle("Branching Fraction (#times 10^{-7})");
-    gConv->GetYaxis()->SetTitle("Likelihood Convoluted");
-    TGraph *gzConv = new TGraph(nInterpolation,xInterpolation,zConv);
-    TGraph *gzConvsv = new TGraph(nInterpolation,xInterpolation,zConvs);
+    TGraph *gr_likelihood_Conv = new TGraph(nInterpolation,xInterpolation,LConvoluted);
+    gr_likelihood_Conv->SetLineColor(kBlue);
+    gr_likelihood_Conv->SetLineWidth(2);
+    gr_likelihood_Conv->SetMarkerColor(4);
+    gr_likelihood_Conv->SetMarkerStyle(0);
+    gr_likelihood_Conv->SetTitle("Likelihood Convoluted");
+    gr_likelihood_Conv->GetXaxis()->SetTitle("Branching Fraction (#times 10^{-7})");
+    gr_likelihood_Conv->GetYaxis()->SetTitle("Likelihood Convoluted");
+    gr_likelihood_Conv->Draw("Csame");
+
+    TGraph *gr_loglikelihood_Conv   = new TGraph(nInterpolation,xInterpolation,zConv);
+    TGraph *gr_Conv_significance    = new TGraph(nInterpolation,xInterpolation,zConvs);
+    TGraph *gr_significance         = new TGraph(nInterpolation,xInterpolation,significance);
     
     
-    gzConv->SetLineColor(4);
-    gzConv->SetLineWidth(2);
-    gzConv->SetMarkerColor(4);
-    gzConv->SetMarkerStyle(0);
-    gzConv->SetTitle("Likelihood Convoluted");
-    gzConv->GetXaxis()->SetTitle("Branching Fraction (#times 10^{-7})");
-    gzConv->GetYaxis()->SetTitle("Likelihood Convoluted");
+    gr_loglikelihood_Conv->SetLineColor(4);
+    gr_loglikelihood_Conv->SetLineWidth(2);
+    gr_loglikelihood_Conv->SetMarkerColor(4);
+    gr_loglikelihood_Conv->SetMarkerStyle(0);
+    gr_loglikelihood_Conv->SetTitle("Likelihood Convoluted");
+    gr_loglikelihood_Conv->GetXaxis()->SetTitle("Branching Fraction (#times 10^{-7})");
+    gr_loglikelihood_Conv->GetYaxis()->SetTitle("Likelihood Convoluted");
+
     //////////////////////////////////////////////
-    gzConvsv->SetLineColor(4);
-    gzConvsv->SetLineWidth(2);
-    gzConvsv->SetMarkerColor(4);
-    gzConvsv->SetMarkerStyle(0);
-    gzConvsv->SetTitle("Likelihood Convoluted");
-    gzConvsv->GetXaxis()->SetTitle("Branching Fraction (#times 10^{-7})");
-    gzConvsv->GetYaxis()->SetTitle("Likelihood Convoluted");
+    gr_Conv_significance->SetLineColor(4);
+    gr_Conv_significance->SetLineWidth(2);
+    gr_Conv_significance->SetMarkerColor(4);
+    gr_Conv_significance->SetMarkerStyle(0);
+    gr_Conv_significance->SetTitle("Significance Convoluted");
+    gr_Conv_significance->GetXaxis()->SetTitle("Branching Fraction (#times 10^{-7})");
+    gr_Conv_significance->GetYaxis()->SetTitle("Significance Convoluted");
+    //////////////////////////////////////////////
+    gr_significance->SetLineColor(4);
+    gr_significance->SetLineWidth(2);
+    gr_significance->SetMarkerColor(4);
+    gr_significance->SetMarkerStyle(0);
+    gr_significance->SetTitle("#sqrt{2#times#Delta log(L)}");
+    gr_significance->GetXaxis()->SetTitle("Branching Fraction (#times 10^{-7})");
+    gr_significance->GetYaxis()->SetTitle("#sqrt{2#times#Delta log(L)}");
   
-    TCanvas *c1 = new TCanvas("likelihood","",800,600);
+    TCanvas *c1 = new TCanvas("likelihood","",900,500);
     c1->Divide(2);
     c1->cd(1)->SetGrid();  
-    gr_likelihood->Draw("ACP");  gzConv->Draw("CPsame");
+    gr_loglikelihood->Draw("ACP");  gr_loglikelihood_Conv->Draw("CPsame");
+    gr_loglikelihood->GetXaxis()->SetRangeUser(MIN,MAX);
+    
     //lhcbpreliminary->Draw();
     c1->cd(2)->SetGrid();
-    //gs->Draw("ACP");gzConvsv->Draw("CPsame");
-    gL->Draw("AC");
-    gConv->Draw("Csame");
+    //gs
+    //gr_loglikelihood->Draw("ACP");gr_Conv_significance->Draw("CPsame");
+    gr_raw_significance->Draw("ACP"); gr_Conv_significance->Draw("CPsame");
+    gr_raw_significance->GetXaxis()->SetRangeUser(MIN,MAX);
+    //gr_likelihood->Draw("AC"); gr_likelihood_Conv->Draw("Csame");
 
     c1->Print("results/Likelihood_plot.eps");
     c1->Print("results/Likelihood_plot.pdf");
+
+
+    TCanvas *c_integrals = new TCanvas("likelihood_integrals","",900,500);
+
+    // Integrate TGraphs
+    TF1 likelihood_raw_function( "likelihood_raw_function", [&](double *xInterpolation, double *){ return gr_likelihood->Eval(     xInterpolation[0]); },MIN,MAX,0);
+    TF1 likelihood_Conv_function("likelihood_Conv_function",[&](double *xInterpolation, double *){ return gr_likelihood_Conv->Eval(xInterpolation[0]); },MIN,MAX,0);
+    
+    TGraph *g_integral_raw  = (TGraph*)likelihood_raw_function.DrawIntegral();
+    TGraph *g_integral_Conv = (TGraph*)likelihood_Conv_function.DrawIntegral();
+
+
+    double integral_raw_range = likelihood_raw_function.Integral(0.0,4.8);
+    double integral_raw_total = likelihood_raw_function.Integral(0.0,20.0);
+    std::cout << "Fraction raw:  " << integral_raw_range/integral_raw_total <<std::endl;
+
+    double integral_Conv_range = likelihood_Conv_function.Integral(0.0,4.8);
+    double integral_Conv_total = likelihood_Conv_function.Integral(0.0,20.0);
+    std::cout << "Fraction Conv: " << integral_Conv_range/integral_Conv_total <<std::endl;
+
+    std::cout << "Value at Zero: " << g_integral_raw->Eval(0.0) <<std::endl;
+    std::cout << "Value at Zero: " << g_integral_Conv->Eval(0.0) <<std::endl;
+    
+    // Subtract offset 
+    for (int i=0;i<g_integral_raw->GetN(); i++) g_integral_raw->GetY()[i]  = g_integral_raw->GetY()[i]  - g_integral_raw->Eval(0.0);
+    for (int i=0;i<g_integral_Conv->GetN();i++) g_integral_Conv->GetY()[i] = g_integral_Conv->GetY()[i] - g_integral_Conv->Eval(0.0);
+    
+
+    for (int i=0;i<g_integral_raw->GetN(); i++) g_integral_raw->GetY()[i]  *= 1/g_integral_raw->Eval(18.0);
+    for (int i=0;i<g_integral_Conv->GetN();i++) g_integral_Conv->GetY()[i] *= 1/g_integral_Conv->Eval(18.0);
+    
+
+    g_integral_raw->SetLineColor(kRed);
+    g_integral_Conv->SetLineColor(kBlue);
+    g_integral_Conv->SetLineWidth(1);
+    g_integral_raw->SetLineWidth(1);
+
+    g_integral_raw->GetXaxis()->SetRangeUser(0.0,5.0);
+    g_integral_Conv->GetXaxis()->SetRangeUser(0.0,5.0);
+    g_integral_raw->GetYaxis()->SetRangeUser(0.0,1.0);
+    g_integral_Conv->GetYaxis()->SetRangeUser(0.0,1.0);
+
+    g_integral_raw->Draw("ACP");
+    g_integral_Conv->Draw("sameCP");
+
+    g_integral_raw->GetXaxis()->SetRangeUser(MIN,MAX);
+    g_integral_Conv->GetXaxis()->SetRangeUser(MIN,MAX);
+
+
+    TLine *line_95 = new TLine(MIN,0.95,MAX,0.95);
+    line_95->Draw();
+
+    double before_95 = 0.0;
+    double after_95  = 0.0;
+    bool found_95 = false;
+    for (int i=0;i<g_integral_raw->GetN(); i++){
+      //std::cout << "("<< g_integral_raw->GetX()[i]<< ","<<g_integral_raw->GetY()[i] << ")"<<std::endl;
+
+      if(g_integral_raw->GetY()[i]>0.95 && !found_95){
+        before_95 = g_integral_raw->GetX()[i-1];
+        after_95 =  g_integral_raw->GetX()[i];
+        found_95 = true;
+      }
+    }
+
+    std::cout << "RAW: " << before_95 << "\t" << after_95 << std::endl;
+
+    double range = after_95- before_95;
+
+    double before_interp_95 = 0.0;
+    double after_interp_95  = 0.0;
+    bool found_interp_95 = false;
+    int No_points = 100;
+
+    for(int i=0; i<No_points; i++ ){
+      double x = before_95 + i*(range / No_points);
+
+      if(g_integral_raw->Eval(x)>0.95 && !found_interp_95){
+        before_interp_95 = x - range / No_points;
+        after_interp_95 =  x;
+        found_interp_95 = true;
+      }
+
+    }
+    std::cout << "RAW: " << before_interp_95 << "\t" << after_interp_95 << std::endl;
+
+    //---------------------
+    before_95 = 0.0;
+    after_95  = 0.0;
+    found_95 = false;
+    for (int i=0;i<g_integral_Conv->GetN(); i++){
+      //std::cout << "("<< g_integral_Conv->GetX()[i]<< ","<<g_integral_Conv->GetY()[i] << ")"<<std::endl;
+
+      if(g_integral_Conv->GetY()[i]>0.95 && !found_95){
+        before_95 = g_integral_Conv->GetX()[i-1];
+        after_95 =  g_integral_Conv->GetX()[i];
+        found_95 = true;
+      }
+    }
+
+    std::cout << "CONV: " << before_95 << "\t" << after_95 << std::endl;
+
+    range = after_95- before_95;
+
+    before_interp_95 = 0.0;
+    after_interp_95  = 0.0;
+    found_interp_95 = false;
+    No_points = 100;
+
+    for(int i=0; i<No_points; i++ ){
+      double x = before_95 + i*(range / No_points);
+
+      if(g_integral_Conv->Eval(x)>0.95 && !found_interp_95){
+        before_interp_95 = x - range / No_points;
+        after_interp_95 =  x;
+        found_interp_95 = true;
+      }
+
+    }
+    std::cout << "CONV: " << before_interp_95 << "\t" << after_interp_95 << std::endl;
+
+
+    TCanvas *c_limits = new TCanvas("limits","Plots I want",900,500);
+    c_limits->Divide(2);
+    c_limits->cd(1);
+    gr_loglikelihood->SetLineColor(kBlack);
+    gr_loglikelihood_Conv->SetLineColor(kBlue);
+
+    gr_loglikelihood->Draw("AC");  
+    gr_loglikelihood_Conv->Draw("Csame");
+    gr_loglikelihood->GetXaxis()->SetRangeUser(-5.0,10.0);
+    gr_loglikelihood->GetYaxis()->SetRangeUser(0.0,20.0);
+    c_limits->cd(2);
+
+    gr_likelihood->GetXaxis()->SetRangeUser(-5.0,10.0);
+    gr_likelihood_Conv->GetXaxis()->SetRangeUser(-5.0,10.0);
+
+    gr_likelihood->SetLineColor(kBlack);
+    gr_likelihood_Conv->SetLineColor(kBlue);
+
+    gr_likelihood->Draw("AC");
+    //gr_likelihood_Conv->Draw("Csame");
+
+    int shaded_points = 41+3;
+    TGraph *grshade = new TGraph(shaded_points);
+    grshade->SetPoint(0,0.0,0.0);
+    
+    for (int i=0;i<(shaded_points-1);i++) {
+      double x = i*0.1;
+      grshade->SetPoint(i+1,x,gr_likelihood->Eval(x));
+    }
+
+    grshade->SetPoint(shaded_points-1,4.1,0.0);
+
+    grshade->SetFillColor(kBlack);
+    grshade->SetFillStyle(3005);
+    grshade->SetFillStyle(3002);
+    //grshade->SetFillColor(kGray);
+    //grshade->SetFillStyle(1001);
+
+    //grshade->Draw("Fsame");
+
+
+
+
+    int shaded_points_Conv = 44+3;
+    TGraph *grshade_Conv = new TGraph(shaded_points_Conv);
+    grshade_Conv->SetPoint(0,0.0,0.0);
+    
+    for (int i=0;i<(shaded_points_Conv-1);i++) {
+      double x = i*0.1;
+      grshade_Conv->SetPoint(i+1,x,gr_likelihood_Conv->Eval(x));
+    }
+
+    grshade_Conv->SetPoint(shaded_points_Conv-1,4.4,0.0);
+
+    //grshade_Conv->SetFillColor(kBlue);
+    //grshade_Conv->SetFillStyle(3004);
+    grshade_Conv->SetFillColor(kAzure-4);
+    grshade_Conv->SetFillStyle(1001);
+    grshade_Conv->Draw("Fsame");
+    grshade->Draw("Fsame");
+
+    gr_likelihood->Draw("Csame");
+    gr_likelihood_Conv->Draw("Csame");
+
+    gPad->RedrawAxis();
+
+    c_limits->Print("results/Likelihood_limits.eps");
+    c_limits->Print("results/Likelihood_limits.pdf");
+    c_limits->Print("results/Likelihood_limits.png");
+    c_limits->Print("results/Likelihood_limits.root");
+    c_limits->Print("results/Likelihood_limits.C");
+
 }
 
 void SetLHCbStyle(std::string type = ""){

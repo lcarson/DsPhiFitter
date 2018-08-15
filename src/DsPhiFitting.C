@@ -24,6 +24,7 @@
 #include "TStyle.h"
 #include "TAxis.h"
 #include "TKey.h"
+#include "TGraphErrors.h"
 #include "TGraph2D.h"
 #include "TLegend.h"
 
@@ -38,11 +39,16 @@
 #include "RooDataSet.h"
 #include "RooMCStudy.h"
 #include "RooGenericPdf.h"
+#include "RooGaussian.h"
+#include "RooConstVar.h"
+#include "RooMinuit.h"
+#include "RooFormulaVar.h"
 
 #include "DsPhiFitting.h"
 #include "Parameters.h"
 #include "CommonTools.h"
 //#include "MultipleCandidates.h"
+
 std::string cutStringBDT("D_BDTG>0.0 && D0_BDTG>0.0");
 
 //**********************
@@ -145,6 +151,7 @@ DsPhiFitting::DsPhiFitting(Parameters* p, TApplication* app)
 , m_mBs0_Mu(5366.477)
 , m_bdtCut(-0.9)
 , state(1)
+, partialstate(1)
 , typeList()
 , yearList()
 , modeList()
@@ -171,6 +178,9 @@ DsPhiFitting::DsPhiFitting(Parameters* p, TApplication* app)
   gStyle->SetMarkerSize(0.5);
   gStyle->SetPadTickX(1);
   gStyle->SetPadTickY(1);
+  
+  gStyle->SetHatchesLineWidth(1.0);
+
  
   DefineModel();
   DefineRooCategories();
@@ -201,7 +211,12 @@ DsPhiFitting::DsPhiFitting(Parameters* p, TApplication* app)
       }else if (par->runEff){
         RunEfficiency();
       }else {
-        RunFullFit((!par->batch)||par->variation[draw]); 
+        if(!par->SetLimits){
+          RunFullFit((!par->batch)||par->variation[draw]);
+        } else {
+          SetLimits();
+        }
+
       }
     }
   }
@@ -251,6 +266,7 @@ void DsPhiFitting::DefineRooCategories()
   Bmode.defineType(DsD0.c_str());
   Bmode.defineType(DsPhi.c_str());
   Bmode.defineType(DsPhiSide.c_str());
+  Bmode.defineType(DsPhiSideWide.c_str());
 
   if(par->modes[Ds2PhiPi])     modeList.push_back(Ds2PhiPi);
   if(par->modes[Ds2KKPi])      modeList.push_back(Ds2KKPi);
@@ -260,6 +276,7 @@ void DsPhiFitting::DefineRooCategories()
   if(par->Bmodes[DsD0])        BmodeList.push_back(DsD0);
   if(par->Bmodes[DsPhi])       BmodeList.push_back(DsPhi);
   if(par->Bmodes[DsPhiSide])   BmodeList.push_back(DsPhiSide);
+  if(par->Bmodes[DsPhiSideWide])   BmodeList.push_back(DsPhiSideWide);
  
 
   if(par->sumOverCharges){
@@ -320,17 +337,17 @@ void DsPhiFitting::DefineRooCategories()
   std::map<std::string,std::string> year;
   std::map<std::string,std::string> region;
 
-  Bmod[DsD0]="D^{0}";   Bmod[DsPhi]="#phi"; Bmod[DsPhiSide]="#phi";
-  mod[Ds2PhiPi]="#phi#pi"; mod[Ds2KKPi]="KK#pi"; mod[Ds2KPiPi]="K#pi#pi";    mod[Ds2PiPiPi]="#pi#pi#pi"; mod["merged"]="";
-  chg[plus]="+";        chg[minus]="#font[122]{-}"; chg[both]="#font[122]{#pm}";
+  Bmod[DsD0]="D^{0}";   Bmod[DsPhi]="#phi"; Bmod[DsPhiSide]="#phi"; Bmod[DsPhiSideWide]="#phi";
+  mod[Ds2PhiPi]="#phi#pi"; mod[Ds2KKPi]="KK#pi"; mod[Ds2KPiPi]="K#pi#pi";    mod[Ds2PiPiPi]="#pi#pi#pi"; mod[merged]="";
+  chg[plus]="+";        chg[minus]="#font[122]{-}"; chg[both]="#font[122]{#pm}";chg[both]="+";
   mag[up]="UP";         mag[dn]="DN";               mag[both]="";
-  hel[both] = "All cos(#theta)"; hel[Helbin1] = "|cos(#theta)|>0.4"; hel[Helbin2] = "|cos(#theta)|<0.4";
+  hel[both] = "All cos(#theta)"; hel[Helbin1] = "|cos(#it{#theta_{K}})| > 0.4"; hel[Helbin2] = "|cos(#it{#theta_{K}})| < 0.4";
   dsbdt[DsBDTbin1]  = "BDT_{D_s} > 0.9";  dsbdt[DsBDTbin2] =  " 0.8 < BDT_{D_s} < 0.9"; 
   phibdt[DsBDTbin1] = "BDT_{#phi} > 0.9"; phibdt[DsBDTbin2] = " 0.8 < BDT_{#phi} < 0.9";
-  year[s21] = "2012"; year[s21r1] = "2011"; year[s24] = "2015"; year[s26] = "2016"; year[both] = "All years";
+  year[s21] = "2012"; year[s21r1] = "2011"; year[s24] = "2015"; year[s26] = "2016"; year[both] = "";
   if(par->nDsBDTBins ==1)  dsbdt[DsBDTbin1]   = "";
   if(par->nPhiBDTBins ==1) phibdt[PhiBDTbin1] = "";
-  region[DsD0] = ""; region[DsPhi] = "#phi region  ";region[DsPhiSide] = "#phi sideband  ";
+  region[DsD0] = ""; region[DsPhi] = "#it{#phi} region  ";region[DsPhiSide] = "#it{#phi} sideband  ";region[DsPhiSideWide] = "#it{#phi} sideband wide ";
 
 
   std::vector<std::string> temp_list = yearList;
@@ -343,16 +360,16 @@ void DsPhiFitting::DefineRooCategories()
             for(std::vector<std::string>::iterator c=chargeList.begin();c!=chargeList.end();c++){
               for(std::vector<std::string>::iterator a=magnetList.begin();a!=magnetList.end();a++){
                 for(std::vector<std::string>::iterator m=modeList.begin();m!=modeList.end();m++){
-                  title[*y][*h][*ds][*ph][*b][*m][*c][*a]       = std::string(Form("B^{%s}#rightarrow D_{s}^{%s} #font[132]{(}#rightarrow %s#font[132]{)} %s #font[132]{(}#rightarrow KK#font[132]{)} %s", chg[*c].c_str(), chg[*c].c_str(),mod[*m].c_str(), Bmod[*b].c_str(), mag[*a].c_str()));
-                  bin_detail[*y][*h][*ds][*ph][*b][*m][*c][*a]  = std::string(Form( "%s %s %s %s",year[*y].c_str(),hel[*h].c_str(),dsbdt[*ds].c_str(),phibdt[*ph].c_str()));
+                  title[*y][*h][*ds][*ph][*b][*m][*c][*a]       = std::string(Form("B^{%s}#rightarrow D_{s}^{%s} #font[132]{(}#rightarrow %s#font[132]{)} %s %s ", chg[*c].c_str(), chg[*c].c_str(),mod[*m].c_str(), Bmod[*b].c_str(), mag[*a].c_str()));
+                  bin_detail[*y][*h][*ds][*ph][*b][*m][*c][*a]  = std::string(Form( "%s %s %s %s ",hel[*h].c_str(),year[*y].c_str(),dsbdt[*ds].c_str(),phibdt[*ph].c_str()));
                   bin_detail2[*y][*h][*ds][*ph][*b][*m][*c][*a] = std::string(Form( "%s ",region[*b].c_str()));
                   
-                  title[*y][*h][*ds][*ph][*b]["merged"][*c][*a]       = std::string(Form("B^{%s}#rightarrow D_{s}^{%s} %s #font[132]{(}#rightarrow KK#font[132]{)} %s", chg[*c].c_str(), chg[*c].c_str(), Bmod[*b].c_str(), mag[*a].c_str()));
-                  bin_detail[*y][*h][*ds][*ph][*b]["merged"][*c][*a]  = std::string(Form( "%s %s %s %s",year[*y].c_str(),hel[*h].c_str(),dsbdt[*ds].c_str(),phibdt[*ph].c_str()));
-                  bin_detail2[*y][*h][*ds][*ph][*b]["merged"][*c][*a] = std::string(Form( "%s ",region[*b].c_str()));
+                  title[*y][*h][*ds][*ph][*b][merged][*c][*a]       = std::string(Form("B^{%s}#rightarrow D_{s}^{%s} %s %s ", chg[*c].c_str(), chg[*c].c_str(), Bmod[*b].c_str(), mag[*a].c_str()));
+                  bin_detail[*y][*h][*ds][*ph][*b][merged][*c][*a]  = std::string(Form( "%s %s %s %s ",hel[*h].c_str(),year[*y].c_str(),dsbdt[*ds].c_str(),phibdt[*ph].c_str()));
+                  bin_detail2[*y][*h][*ds][*ph][*b][merged][*c][*a] = std::string(Form( "%s ",region[*b].c_str()));
                   
                   if(par->genToys) title[*y][*h][*ds][*ph][*b][*m][*c][*a]+=" TOY"; 
-                  if(par->genToys) title[*y][*h][*ds][*ph][*b]["merged"][*c][*a]+=" TOY"; 
+                  if(par->genToys) title[*y][*h][*ds][*ph][*b][merged][*c][*a]+=" TOY"; 
                 }
               }
             }
@@ -620,8 +637,10 @@ RooDataSet* DsPhiFitting::MakeDataSet(std::string t,std::string m,std::string b)
       if( (*it).find("D0D")   !=std::string::npos && b == DsD0      ) { s_Bmode=DsD0;     } 
       if( (*it).find("D0D")   !=std::string::npos && b == DsPhi     ) { s_Bmode="";       } 
       if( (*it).find("D0D")   !=std::string::npos && b == DsPhiSide ) { s_Bmode="";       }    
+      if( (*it).find("D0D")   !=std::string::npos && b == DsPhiSideWide ) { s_Bmode="";       }    
       if( (*it).find("PhiD")  !=std::string::npos && b == DsPhi     ) { s_Bmode=DsPhi;    }
       if( (*it).find("PhiD")  !=std::string::npos && b == DsPhiSide ) { s_Bmode=DsPhiSide;}
+      if( (*it).find("PhiD")  !=std::string::npos && b == DsPhiSideWide ) { s_Bmode=DsPhiSideWide;}
       if( (*it).find("PhiD")  !=std::string::npos && b == DsD0      ) { s_Bmode="";       }
 
       if( s_Bmode==b && ((m == Ds2PhiPi && (*it).find((Ds2KKPi+underscore).c_str())!=std::string::npos ) 
@@ -660,7 +679,7 @@ RooDataSet* DsPhiFitting::MakeDataSet(std::string t,std::string m,std::string b)
             if( s_mode==Ds2KKPi )   { tfileFolderName = "B2D0D_D02KK_D2KKPi"; } //NB it's D2KKPi, not Ds2KKPi
             if( s_mode==Ds2PiPiPi ) { tfileFolderName = "B2D0D_D02KK_D2PiPiPi"; }
             if( s_mode==Ds2KPiPi )  { tfileFolderName = "B2D0D_D02KK_D2KPiPi"; }
-          } else if(s_Bmode==DsPhi||s_Bmode==DsPhiSide){
+          } else if(s_Bmode==DsPhi||s_Bmode==DsPhiSide||s_Bmode==DsPhiSideWide){
             if( s_mode==Ds2PhiPi )  { tfileFolderName = "B2PhiD_Phi2KK_D2KKPi"; } //NB it's D2KKPi, not Ds2KKPi
             if( s_mode==Ds2KKPi )   { tfileFolderName = "B2PhiD_Phi2KK_D2KKPi"; } //NB it's D2KKPi, not Ds2KKPi
             if( s_mode==Ds2PiPiPi ) { tfileFolderName = "B2PhiD_Phi2KK_D2PiPiPi"; }
@@ -821,6 +840,13 @@ RooDataSet* DsPhiFitting::FinalDataSet(const std::string s_Bmode, const std::str
         if(fabs(phim->getVal()-m_mPhi_Mu)<10) bMassRegion.setLabel("bckgrd");
       }
 
+    }else if(s_Bmode==DsPhiSideWide){
+      if(signal==std::string(bMassRegion.getLabel())){
+        RooRealVar* phim = (RooRealVar*) row->find(mPhi.GetName());
+        if(fabs(phim->getVal()-m_mPhi_Mu)>150) bMassRegion.setLabel("bckgrd");
+        if(fabs(phim->getVal()-m_mPhi_Mu)<40) bMassRegion.setLabel("bckgrd");
+      }
+
     }
     if(signal==std::string(bMassRegion.getLabel())){
       RooRealVar* ds = (RooRealVar*) row->find(mDs.GetName());
@@ -851,7 +877,7 @@ RooDataSet* DsPhiFitting::FinalDataSet(const std::string s_Bmode, const std::str
     }
 
     //Veto Bs->phi phi events
-    if((s_Bmode==DsPhi||s_Bmode==DsPhiSide)&&(s_mode==Ds2PhiPi||s_mode==Ds2KKPi)){
+    if((s_Bmode==DsPhi||s_Bmode==DsPhiSide||s_Bmode==DsPhiSideWide)&&(s_mode==Ds2PhiPi||s_mode==Ds2KKPi)){
       if(signal==std::string(bMassRegion.getLabel())){
         RooRealVar* mphiphi = (RooRealVar*) row->find(m1245.GetName());
         if(fabs(mphiphi->getVal()-m_mBs0_Mu)<50) bMassRegion.setLabel("bckgrd");
@@ -859,7 +885,7 @@ RooDataSet* DsPhiFitting::FinalDataSet(const std::string s_Bmode, const std::str
     }
 
      //Veto Ds->KKPi in Ds->KKPi
-    if((s_Bmode==DsPhi||s_Bmode==DsPhiSide)&&(s_mode==Ds2PhiPi||s_mode==Ds2KKPi)){
+    if((s_Bmode==DsPhi||s_Bmode==DsPhiSide||s_Bmode==DsPhiSideWide)&&(s_mode==Ds2PhiPi||s_mode==Ds2KKPi)){
       if(signal==std::string(bMassRegion.getLabel())){
         RooRealVar* mmisskkpi = (RooRealVar*) row->find(m345.GetName());
         if(fabs(mmisskkpi->getVal()-m_mDs_Mu)<25) bMassRegion.setLabel("bckgrd");
@@ -868,7 +894,7 @@ RooDataSet* DsPhiFitting::FinalDataSet(const std::string s_Bmode, const std::str
     }
 
     //Veto Ds->KKPi in Ds->PiPiPi
-    if((s_Bmode==DsPhi||s_Bmode==DsPhiSide)&&s_mode==Ds2PiPiPi){
+    if((s_Bmode==DsPhi||s_Bmode==DsPhiSide||s_Bmode==DsPhiSideWide)&&s_mode==Ds2PiPiPi){
       if(signal==std::string(bMassRegion.getLabel())){
         RooRealVar* mmisskkpi_1 = (RooRealVar*) row->find(m145.GetName());
         RooRealVar* mmisskkpi_2 = (RooRealVar*) row->find(m245.GetName());
@@ -883,7 +909,7 @@ RooDataSet* DsPhiFitting::FinalDataSet(const std::string s_Bmode, const std::str
     }    
 
     //Veto Ds->KKPi in Ds->KPiPi
-    if((s_Bmode==DsPhi||s_Bmode==DsPhiSide)&&s_mode==Ds2KPiPi){
+    if((s_Bmode==DsPhi||s_Bmode==DsPhiSide||s_Bmode==DsPhiSideWide)&&s_mode==Ds2KPiPi){
       if(signal==std::string(bMassRegion.getLabel())){
         RooRealVar* mmisskkpi_2 = (RooRealVar*) row->find(m245.GetName());
         RooRealVar* mmisskkpi_3 = (RooRealVar*) row->find(m345.GetName());
@@ -926,6 +952,7 @@ RooDataSet* DsPhiFitting::FinalDataSet(const std::string s_Bmode, const std::str
         if(s_Bmode==DsD0      && bdd0->getVal() < 0.8) {bMassRegion.setLabel("bckgrd");}// 0.7
         if(s_Bmode==DsPhi     && bdphi->getVal()< 0.8) {bMassRegion.setLabel("bckgrd");}// 0.7
         if(s_Bmode==DsPhiSide && bdphi->getVal()< 0.8) {bMassRegion.setLabel("bckgrd");}// 0.7
+        if(s_Bmode==DsPhiSideWide && bdphi->getVal()< 0.8) {bMassRegion.setLabel("bckgrd");}// 0.7
 
         // Main selection [BDT] cuts. Values chosen just by looking at D_BDT distribution, and removing a few events in the tail.
         // Same Phi/D0 Cut for all modes
@@ -959,13 +986,13 @@ RooDataSet* DsPhiFitting::FinalDataSet(const std::string s_Bmode, const std::str
         if(D_fdchi2->getVal() <18.0)  bMassRegion.setLabel("bckgrd");
         if(D0_fdchi2->getVal()<0.0)   bMassRegion.setLabel("bckgrd");
       
-      } else if((s_mode == Ds2KKPi||s_mode==Ds2PhiPi) && s_Bmode == DsPhi){
+      } else if((s_mode == Ds2KKPi||s_mode==Ds2PhiPi) && (s_Bmode == DsPhi||s_Bmode == DsPhiSide||s_Bmode == DsPhiSideWide)){
         if(D_fdchi2->getVal()<0.0)   bMassRegion.setLabel("bckgrd");
       
-      } else if(s_mode == Ds2PiPiPi && s_Bmode == DsPhi){
+      } else if(s_mode == Ds2PiPiPi && (s_Bmode == DsPhi||s_Bmode == DsPhiSide||s_Bmode == DsPhiSideWide)){
         if(D_fdchi2->getVal()<5.0)   bMassRegion.setLabel("bckgrd");
       
-      } else if(s_mode == Ds2KPiPi && s_Bmode == DsPhi){
+      } else if(s_mode == Ds2KPiPi && (s_Bmode == DsPhi||s_Bmode == DsPhiSide||s_Bmode == DsPhiSideWide)){
         if(D_fdchi2->getVal()<25.0)   bMassRegion.setLabel("bckgrd");
       }
 
@@ -973,7 +1000,7 @@ RooDataSet* DsPhiFitting::FinalDataSet(const std::string s_Bmode, const std::str
 
     // Test cut
     
-    if(s_Bmode== DsPhi || s_Bmode == DsPhiSide || s_Bmode == DsD0){
+    if(s_Bmode== DsPhi || s_Bmode == DsPhiSide|| s_Bmode == DsPhiSideWide || s_Bmode == DsD0){
       RooRealVar* Bu_ipchi2    = (RooRealVar*) row->find(BuIPCHI2.GetName());
       RooRealVar* D_ipchi2     = (RooRealVar*) row->find(DIPCHI2.GetName());
       if(log10(Bu_ipchi2->getVal())>1.0)   bMassRegion.setLabel("bckgrd");
@@ -1183,12 +1210,20 @@ void DsPhiFitting::DefineModel()
   if(par->debug) std::cout<<"Running: DsPhiFitting::DefineModel()"<<std::endl;
   /**********************************************/
   /**********************************************/
-  /****/           state=BLIND;             /****/
+  /****/           state=UNBLIND;             /****/
   /**********************************************/
   /**********************************************/
+
+  /**********************************************/
+  /**********************************************/
+  /****/      partialstate=UNBLIND;           /****/
+  /**********************************************/
+  /**********************************************/
+
   if(par->genToys) state=UNBLIND;
   model_gen = new DsPhiModel(par,&mB,UNBLIND,1,1);
-  model     = new DsPhiModel(par,&mB,state,1,0);
+  model     = new DsPhiModel(par,&mB,partialstate,1,0);
+  //model     = new DsPhiModel(par,&mB,state,1,0);
 
   if(par->vary) model_novary  = new DsPhiModel(par,&mB,UNBLIND,0,0);
   std::cout << "DsPhiModel built; continuing..." << std::endl << std::endl;
@@ -1221,7 +1256,7 @@ void DsPhiFitting::RunFullFit(bool draw=true)
   std::cout << "=============> Printed data set " <<std::endl;
   tempcat.Print();
 
-  if(par->doLikelihood) model->SetBrToConstVal(par->likelihoodBR);
+  if(par->doLikelihood) model->SetBrToConstVal(par->likelihoodBR-10.0);
   RooSimultaneous*  sim=model->Pdf();
   RooDataHist* hist;
   if(par->binned) hist = data->binnedClone();
@@ -1307,8 +1342,22 @@ void DsPhiFitting::RunFullFit(bool draw=true)
       }
     }
     */
+    //RooAbsReal* con = model->Constraint();
+
+    //RooGaussian fconstext("fconstext","fconstext",*con,RooFit::RooConst(0.0),RooFit::RooConst(0.78));
+
+
     std::cout <<"Running: DsPhiFitting::RunFullFit() ---> Starting fitTo"<<std::endl;
-    result = sim->fitTo(*abs,RooFit::Save(),RooFit::Minos(par->minos),RooFit::PrintLevel(par->batch?-1:1),RooFit::Optimize(false),RooFit::Timer(true) );//,RooFit::Range("fitRange"),RooFit::SplitRange(kTRUE));
+
+    result = sim->fitTo( *abs
+                         ,RooFit::Save()
+                         ,RooFit::Minos(par->minos)
+                         ,RooFit::PrintLevel(par->batch?-1:1)
+                         ,RooFit::Optimize(false)
+                         ,RooFit::Timer(true) 
+                         //,RooFit::Contrain("Br_syst")
+                         //,RooFit::ExternalConstraints(fconstext)
+                         );//,RooFit::Range("fitRange"),RooFit::SplitRange(kTRUE));
     TCanvas* corrCanv = new TCanvas("corrCanv","",1000,1000); corrCanv->cd();
     //result->correlationHist()->Draw("colz");
     TH2* corr = result->correlationHist();
@@ -1371,7 +1420,7 @@ void DsPhiFitting::RunFullFit(bool draw=true)
     std::cout<<std::endl;
 
     std::cout << "===================================" << std::endl ;
-    //model->PrintResult();
+    model->PrintResult(result);
 
     gSystem->Exec("mkdir -p results");
     std::string lastfit_name = "lastRooFitResult";
@@ -1398,8 +1447,89 @@ void DsPhiFitting::RunFullFit(bool draw=true)
       f.Close();  
     }
 
+    if(par->doLikelihood){
+      if(par->debug) std::cout<<"Running: DsPhiFitting::RunFullFit() ----> Making likelihood plot..."<<std::endl;
+      
+      RooAbsReal* branching_fraction_all=model->BranchingFraction();
+      ((RooRealVar*)branching_fraction_all)->Print();
+      ((RooRealVar*)branching_fraction_all)->setConstant(false);
+      ((RooRealVar*)branching_fraction_all)->Print();
+      //sim->Print("v");
+      RooArgSet *vars = sim->getVariables();
+      //vars->Print("v");
+
+      RooAbsReal* nll = sim->createNLL(*data);    
+      double minNll = result->minNll();
+      std::cout << "Min NLL: " << minNll <<std::endl;
+      double factor = 10.0;
+
+      // Make nLL into histogram
+
+      TH1* nll_hist = nll->createHistogram("Branching_fraction",120*factor);
+      TH1* likelihood_hist = (TH1*)nll_hist->Clone("likelihood_hist");
+      int nbinsx = nll_hist->GetXaxis()->GetNbins();
+
+      
+      // Make nll into Likelihood
+      for(int i = 0; i<nbinsx+2; i++){
+        //std::cout << i << " Bin content: " << nll_hist->GetBinContent(i) << "\t"<< factor*nll_hist->GetBinContent(i)-minNll << "\t"<< exp( -(factor*nll_hist->GetBinContent(i)-minNll) ) << std::endl;
+        
+        if(factor*nll_hist->GetBinContent(i)-minNll > -1000.0 ){ //&& likelihood_hist->GetBinLowEdge(i)>0.0
+          likelihood_hist->SetBinContent(i, exp( -(factor*nll_hist->GetBinContent(i)-minNll) ) );
+        } else {
+          likelihood_hist->SetBinContent(i, 0.0);
+        }
+        std::cout << i << " Bin content: " << nll_hist->GetBinContent(i) << "\t"<< factor*nll_hist->GetBinContent(i)-minNll << "\t"<< likelihood_hist->GetBinContent(i) << std::endl;
+
+      }
+      //nll->Print("v");
+      TCanvas * c2 = new TCanvas("nll","",700,600); 
+      c2->Divide(2,1);
+      c2->cd(1);
+      RooPlot* frame = ((RooRealVar*)branching_fraction_all)->frame(RooFit::Range(-10.00,100.0)) ;
+      //nll->plotOn(frame,RooFit::ShiftToZero()) ;
+      nll->plotOn(frame) ;
+      //frame->Draw();
+
+
+      nll_hist->Draw();
+      c2->cd(2);
+      likelihood_hist->GetXaxis()->SetRangeUser(-5.0,20.0);
+      likelihood_hist->Draw();
+
+      TAxis *axis = likelihood_hist->GetXaxis();
+        
+      double xmin = -5.0;
+      double xmax = 18.0;
+      int bmin = axis->FindBin(xmin); 
+      int bmax = axis->FindBin(xmax);
+      double integral_tot = likelihood_hist->Integral(bmin,bmax);
+      //integral_tot =  integral_tot  - (likelihood_hist->GetBinContent(bmin)*( xmin-axis->GetBinLowEdge(bmin) ) /axis->GetBinWidth(bmin));
+      //integral_tot =  integral_tot  - (likelihood_hist->GetBinContent(bmax)*(axis->GetBinUpEdge(bmax)-xmax))/axis->GetBinWidth(bmax));
+      std::cout <<"Total integral: " << integral_tot << std::endl;
+      
+      xmin = -5.0;
+      xmax = 1.16;
+      bmin = axis->FindBin(xmin); 
+      bmax = axis->FindBin(xmax);
+      double integral = likelihood_hist->Integral(bmin,bmax);
+      //integral -= likelihood_hist->GetBinContent(bmin)*(xmin-axis->GetBinLowEdge(bmin))/axis->GetBinWidth(bmin);
+      //integral -= likelihood_hist->GetBinContent(bmax)*(axis->GetBinUpEdge(bmax)-xmax))/axis->GetBinWidth(bmax);
+      std::cout <<"Below 1.16 integral: " << integral << std::endl;
+      std::cout <<"Integral Fraction: " << integral/integral_tot << std::endl;
+
+
+      c2->SaveAs(Form("results/limits/nLL_fixedBR_%s_%f.pdf",  branching_fraction_all->GetName(),par->likelihoodBR-10.0  ));
+      std::string text_filename  = Form("results/limits/text_nLL_fixedBR_%s_%f.txt",  branching_fraction_all->GetName(),par->likelihoodBR-10.0  );
+      std::ofstream output_file(text_filename.c_str());
+      output_file << par->likelihoodBR-10.0 <<":"<< integral <<":"<< integral_tot <<":"<< integral/integral_tot;
+      output_file.close();
+    }
+
   } // closes if(par->doFit)
 
+
+  //if(!draw && !par->SetLimits) return;
   if(!draw) return;
   if(par->debug) std::cout<<"Running: DsPhiFitting::RunFullFit() ----> Drawing Histograms..."<<std::endl;
 
@@ -1411,8 +1541,9 @@ void DsPhiFitting::RunFullFit(bool draw=true)
   //TString wholerange_string    = Form("%s>4900&&%s<5900",mB.GetName(),mB.GetName());//"mB>5330";
 
   std::vector<std::string> mergedList;
-  mergedList.push_back("merged");
-  if(par->doMerge) modeList = mergedList;
+  mergedList.push_back(merged);
+  //if(par->doMerge) modeList = mergedList;
+  if(par->doMerge) modeList.push_back(merged);
 
   // -------------------------------------------------------------------------
   //std::vector<std::string> temp_list = yearList;
@@ -1429,8 +1560,8 @@ void DsPhiFitting::RunFullFit(bool draw=true)
         if(par->dsetsReq[s21r1]) canvas_name += "_"+s21r1;
         if(par->dsetsReq[s24])   canvas_name += "_"+s24;
         if(par->dsetsReq[s26])   canvas_name += "_"+s26;
-        if( (*b).c_str()==DsPhi || (*b).c_str()==DsPhiSide){      
-          binWidth=40;//MeV/c2
+        if( (*b).c_str()==DsPhi || (*b).c_str()==DsPhiSide|| (*b).c_str()==DsPhiSideWide){      
+          binWidth=20;//MeV/c2
           mB.setBins((mB.getMax()-mB.getMin())/binWidth);
         }
 
@@ -1463,16 +1594,17 @@ void DsPhiFitting::RunFullFit(bool draw=true)
                   std::cout << " Plotting Category: " << cat_str << std::endl; 
                   std::cout << "------------------------------------------" <<std::endl;
                   RooArgSet cat_argset;
-                  if(par->doMerge) {
-                    std::cout << "Label: " << cat->getLabel() << std::endl;
-                    //cat->setLabel(Form("%s_%s_%s_%s_%s_%s_%s_%s",(*y).c_str(),(*h).c_str(),(*ds).c_str(),(*ph).c_str(),(*b).c_str(),Ds2KKPi.c_str(),(*c).c_str(),(*a).c_str()));
-                    //cat_argset.add(RooArgSet(*cat));
-                  }else{
-                    cat->setLabel(cat_str.c_str());
-                    cat_argset.add(RooArgSet(*cat));
                   
-                    
-                  }
+                  //if((*m).c_str() == merged) {
+                  //  std::cout << "Label: " << cat->getLabel() << std::endl;
+                  //  //cat->setLabel(Form("%s_%s_%s_%s_%s_%s_%s_%s",(*y).c_str(),(*h).c_str(),(*ds).c_str(),(*ph).c_str(),(*b).c_str(),Ds2KKPi.c_str(),(*c).c_str(),(*a).c_str()));
+                  //  //cat_argset.add(RooArgSet(*cat));
+                  //}else{
+                  //  cat->setLabel(cat_str.c_str());
+                  //  cat_argset.add(RooArgSet(*cat));
+                  //
+                  //  
+                  //}
                  
                   std::string cat_cut = Form("cat==cat::%s",cat_str.c_str());
 
@@ -1480,6 +1612,7 @@ void DsPhiFitting::RunFullFit(bool draw=true)
                   // PDF names
                   std::string str_comb     = Form("pdf_comb_%s",     cat_str.c_str());    
                   std::string str_peak     = Form("pdf_peak_%s",     cat_str.c_str());    
+                  std::string str_DsKK     = Form("pdf_DsKK_%s",     cat_str.c_str());    
                   std::string str_Dsa1     = Form("pdf_Dsa1_%s",     cat_str.c_str());
                   std::string str_PartReco = Form("pdf_PartReco_%s", cat_str.c_str());
                   std::string str_DsstKKst = Form("pdf_DsstKKst_%s", cat_str.c_str());
@@ -1492,7 +1625,8 @@ void DsPhiFitting::RunFullFit(bool draw=true)
                   std::string str_Bs2DsstDs= Form("pdf_Bs2DsstDs_%s",cat_str.c_str());  
                   std::string str_B02DsD   = Form("pdf_B02DsD_%s",   cat_str.c_str());
 
-                  if(par->doMerge) {
+                  if((*m).c_str() == merged )  {
+                    
                     cat_str_PhiPi  = Form("%s_%s_%s_%s_%s_%s_%s_%s",(*y).c_str(),(*h).c_str(),(*ds).c_str(),(*ph).c_str(),(*b).c_str(),Ds2PhiPi.c_str() ,(*c).c_str(),(*a).c_str());
                     cat_str_KKPi   = Form("%s_%s_%s_%s_%s_%s_%s_%s",(*y).c_str(),(*h).c_str(),(*ds).c_str(),(*ph).c_str(),(*b).c_str(),Ds2KKPi.c_str()  ,(*c).c_str(),(*a).c_str());
                     cat_str_KPiPi  = Form("%s_%s_%s_%s_%s_%s_%s_%s",(*y).c_str(),(*h).c_str(),(*ds).c_str(),(*ph).c_str(),(*b).c_str(),Ds2KPiPi.c_str() ,(*c).c_str(),(*a).c_str());
@@ -1500,61 +1634,9 @@ void DsPhiFitting::RunFullFit(bool draw=true)
 
                     cat_cut = Form("(cat==cat::%s||cat==cat::%s||cat==cat::%s||cat==cat::%s)",cat_str_PhiPi.c_str(),cat_str_KKPi.c_str(),cat_str_KPiPi.c_str(),cat_str_PiPiPi.c_str());
                     
-                    //type.setLabel(     Form("%s",(*y).c_str()));
-                    //helBin.setLabel(   Form("%s",(*h).c_str()));
-                    //DsBDTBin.setLabel( Form("%s",(*ds).c_str()));
-                    //PhiBDTBin.setLabel(Form("%s",(*ph).c_str()));
-                    //Bmode.setLabel(    Form("%s",(*b).c_str()));
-                    //magnet.setLabel(   Form("%s",(*c).c_str()));
-                    //charge.setLabel(   Form("%s",(*a).c_str()));
-
-                    //std::cout << "Type: " << type.getLabel() << std::endl;
-                    //std::cout << "Hel : " << helBin.getLabel()<< std::endl;
-                    //std::cout << "Ds  : " << DsBDTBin.getLabel()<< std::endl;
-                    //std::cout << "Phi : " << PhiBDTBin.getLabel()<< std::endl;
-                    //std::cout << "Bmod: " << Bmode.getLabel()<< std::endl;
-                    //std::cout << "mag : " << magnet.getLabel()<< std::endl;
-                    //std::cout << "char: " << charge.getLabel()<< std::endl;
-
-                    //cat_argset = RooArgSet(Bmode,helBin,DsBDTBin,PhiBDTBin);
-                    //RooArgSet test(type,helBin,DsBDTBin,PhiBDTBin,Bmode,magnet,charge);
-                    //RooArgSet test(Bmode,helBin);
-                    //RooArgSet test(Bmode,helBin);
-                    //cat_argset.add(test);
-                    //cat_argset.add(temp_argset);
-                    //std::cout << "=============>> ARGSET" <<std::endl;
-                    //cat_argset.Print();
-                    //type.Print();
-                    //test.Print();
-                    //std::cout << "=============" <<std::endl;
-                    //const RooArgSet *row = data->get(1);
-                    //row->Print();
-                    //RooCategory* c0 = (RooCategory*) row->find("magnet");
-                    //RooCategory* c1 = (RooCategory*) row->find("charge");
-                    //RooCategory* c2 = (RooCategory*) row->find("cat");
-                    //RooCategory* c3 = (RooCategory*) row->find("type");
-                    //RooCategory* c4 = (RooCategory*) row->find("mode");
-                    //RooCategory* c5 = (RooCategory*) row->find("Bmode");
-                    //RooCategory* c6 = (RooCategory*) row->find("helBin");
-                    //RooCategory* c7 = (RooCategory*) row->find("DsBDTBin");
-                    //RooCategory* c8 = (RooCategory*) row->find("PhiBDTBin");
-                    //std::cout << "Type: " << c3->getLabel() << std::endl;
-                    //std::cout << "Hel : " << c6->getLabel()<< std::endl;
-                    //std::cout << "Ds  : " << c7->getLabel()<< std::endl;
-                    //std::cout << "Phi : " << c8->getLabel()<< std::endl;
-                    //std::cout << "Bmod: " << c5->getLabel()<< std::endl;
-                    //std::cout << "mag : " << c0->getLabel()<< std::endl;
-                    //std::cout << "char: " << c1->getLabel()<< std::endl;
-                    //std::cout << "cat : " << c2->getLabel()<< std::endl;
-
-                    //std::cout << "=============" <<std::endl;
-                    //std::cout << "============= Setting range: " <<std::endl;
-                    //cat->setRange("AllDmodes",Form("%s,%s,%s,%s",cat_str_PhiPi.c_str(),cat_str_KKPi.c_str(),cat_str_KPiPi.c_str(),cat_str_PiPiPi.c_str()));
-                    //std::cout << "Label: " << cat->getLabel() << std::endl;
-                    //std::cout << "============= Set range " <<std::endl;
-                    
                     str_comb     = Form("pdf_comb_%s,pdf_comb_%s,pdf_comb_%s,pdf_comb_%s",                 cat_str_PhiPi.c_str(), cat_str_KKPi.c_str(), cat_str_KPiPi.c_str(), cat_str_PiPiPi.c_str() );    
                     str_peak     = Form("pdf_peak_%s,pdf_peak_%s,pdf_peak_%s,pdf_peak_%s",                 cat_str_PhiPi.c_str(), cat_str_KKPi.c_str(), cat_str_KPiPi.c_str(), cat_str_PiPiPi.c_str() );    
+                    str_DsKK     = Form("pdf_DsKK_%s,pdf_DsKK_%s,pdf_DsKK_%s,pdf_DsKK_%s",                 cat_str_PhiPi.c_str(), cat_str_KKPi.c_str(), cat_str_KPiPi.c_str(), cat_str_PiPiPi.c_str() );    
                     str_Dsa1     = Form("pdf_Dsa1_%s,pdf_Dsa1_%s,pdf_Dsa1_%s,pdf_Dsa1_%s",                 cat_str_PhiPi.c_str(), cat_str_KKPi.c_str(), cat_str_KPiPi.c_str(), cat_str_PiPiPi.c_str() );
                     str_PartReco = Form("pdf_PartReco_%s,pdf_PartReco_%s,pdf_PartReco_%s,pdf_PartReco_%s", cat_str_PhiPi.c_str(), cat_str_KKPi.c_str(), cat_str_KPiPi.c_str(), cat_str_PiPiPi.c_str() );
                     str_DsstKKst = Form("pdf_DsstKKst_%s,pdf_DsstKKst_%s,pdf_DsstKKst_%s,pdf_DsstKKst_%s", cat_str_PhiPi.c_str(), cat_str_KKPi.c_str(), cat_str_KPiPi.c_str(), cat_str_PiPiPi.c_str() );
@@ -1572,7 +1654,7 @@ void DsPhiFitting::RunFullFit(bool draw=true)
                   if((*b).c_str()==DsD0){ 
                     str_total  = Form("%s,%s,%s,%s,%s",str_comb.c_str(),str_peak.c_str(),str_DsstD0.c_str(),  str_DsDst0.c_str(),  str_DsstDst0.c_str());
                   }else {
-                    str_total = Form("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s",str_comb.c_str(),str_peak.c_str(),str_PartReco.c_str(),str_DsstKKst.c_str(),str_Dsa1.c_str(),str_DsD.c_str(),str_DsstKK.c_str(),str_Bs2DsDs.c_str(),str_Bs2DsstDs.c_str(),str_B02DsD.c_str());
+                    str_total = Form("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s",str_comb.c_str(),str_peak.c_str(),str_DsKK.c_str(),str_PartReco.c_str(),str_DsstKKst.c_str(),str_Dsa1.c_str(),str_DsD.c_str(),str_DsstKK.c_str(),str_Bs2DsDs.c_str(),str_Bs2DsstDs.c_str(),str_B02DsD.c_str());
                   }
 
                   //std::cout << "=== Total Events in Dataset:  " << data->sumEntries() << std::endl;
@@ -1590,7 +1672,18 @@ void DsPhiFitting::RunFullFit(bool draw=true)
                   plot[*h][*ds][*ph][*c][*a] = mB.frame();
                   //if(par->debug) std::cout<<"Conditions: "<<(*a).c_str()<<", "<<(*c).c_str()<<std::endl;
                   
-                  if( ((*b).c_str()==DsPhi || (*b).c_str()==DsPhiSide ) and state==BLIND){     
+                  //if( ((*b).c_str()==DsPhi || (*b).c_str()==DsPhiSide ) and state==BLIND){     
+                  
+                  if( ( ( (*b).c_str()==DsPhi     && (*h).c_str()==Helbin1 ) and state==BLIND)        ||    
+                      ( ( (*b).c_str()==DsPhi     && (*h).c_str()==Helbin2 ) and partialstate==BLIND) ||    
+                      ( ( (*b).c_str()==DsPhiSide && (*h).c_str()==Helbin1 ) and partialstate==BLIND) ||    
+                      ( ( (*b).c_str()==DsPhiSide && (*h).c_str()==Helbin2 ) and partialstate==BLIND) ||    
+                      ( ( (*b).c_str()==DsPhiSideWide && (*h).c_str()==Helbin1 ) and partialstate==BLIND) ||    
+                      ( ( (*b).c_str()==DsPhiSideWide && (*h).c_str()==Helbin2 ) and partialstate==BLIND) ||  
+                      ( ( (*b).c_str()==DsPhi     && (*h).c_str()==both )    and state==BLIND)        ||  
+                      ( ( (*b).c_str()==DsPhiSide && (*h).c_str()==both )    and partialstate==BLIND) ||  
+                      ( ( (*b).c_str()==DsPhiSideWide && (*h).c_str()==both )    and partialstate==BLIND)     ){     
+                  
                     std::cout << "Keeping Bu region blind!" << std::endl;
                     
                     //TString cat_string = Form("&&cat==cat::%s",cat_str.c_str());
@@ -1613,12 +1706,13 @@ void DsPhiFitting::RunFullFit(bool draw=true)
                                   //RooFit::Cut(Form("cat==cat::%s",cat_str.c_str())),
                                   RooFit::Cut(cat_cut.c_str()), 
                                   RooFit::DrawOption("PZ"),
-                                  RooFit::CutRange("lowersideband,uppersideband"),
+                                  RooFit::CutRange("lowersideband,uppersideband"), 
+                                  RooFit::MarkerSize(0.8),
                                   RooFit::Name(Form("data_%s", cat_str.c_str() ))  );
 
                     if(par->doDraw){                
-                      if((*b).c_str()==DsPhi || (*b).c_str()==DsPhiSide ){ 
-                        
+                      if((*b).c_str()==DsPhi || (*b).c_str()==DsPhiSide || (*b).c_str()==DsPhiSideWide ){ 
+                      
                         // ------------------------------------------
                         // Combinatoric + Ds*Phi + Dsa1 + test
                         // ------------------------------------------
@@ -1839,7 +1933,8 @@ void DsPhiFitting::RunFullFit(bool draw=true)
                     data->plotOn( plot[*h][*ds][*ph][*c][*a],
                                   //RooFit::Cut(Form("cat==cat::%s",cat_str.c_str())),
                                   RooFit::Cut(cat_cut.c_str()), 
-                                  RooFit::DrawOption("PZ") );
+                                  RooFit::DrawOption("PZ"),
+                                  RooFit::Name("data") );
                     if(par->doDraw){
                       
                       if((*b).c_str() == DsD0) { 
@@ -1894,16 +1989,68 @@ void DsPhiFitting::RunFullFit(bool draw=true)
                     
                       
 
-                      } else if((*b).c_str() == DsPhi || (*b).c_str() == DsPhiSide) {sim->plotOn(  plot[*h][*ds][*ph][*c][*a],
-                                      //RooFit::Slice(RooArgSet(*cat)), 
-                                      //RooFit::ProjWData(RooArgSet(*cat),*data) ,
+                      } else if((*b).c_str() == DsPhi || (*b).c_str() == DsPhiSide|| (*b).c_str() == DsPhiSideWide) {
+                        
+                      // ------------------------------------------
+                      // Signal
+                      // ------------------------------------------
+                      sim->plotOn(  plot[*h][*ds][*ph][*c][*a],
+                                    //RooFit::FillColor(kRed),
+                                    //RooFit::LineWidth(0),
+                                    
+                                    RooFit::FillColor(kBlack),
+                                    RooFit::LineColor(kBlack),
+                                    RooFit::LineWidth(1),
+
+                                    
+                                    RooFit::Slice(cat_argset), 
+                                    RooFit::ProjWData(cat_argset,*data) ,
+                                    RooFit::Components(Form("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s",str_peak.c_str(),str_DsKK.c_str(),str_Bs2DsstDs.c_str(),str_B02DsD.c_str(),str_Bs2DsDs.c_str(),str_DsstKK.c_str(),str_DsD.c_str(),str_Dsa1.c_str(),str_PartReco.c_str(),str_DsstKKst.c_str(),str_comb.c_str())),
+                                    RooFit::DrawOption("F"),
+                                    RooFit::Name("Signal") );
+                      // ------------------------------------------
+                      // DsKK
+                      // ------------------------------------------
+                      sim->plotOn(  plot[*h][*ds][*ph][*c][*a],
+                                    //RooFit::FillColor(kGray),
+                                    //RooFit::LineWidth(0),
+                                    
+                                    RooFit::FillColor(18),
+                                    RooFit::LineColor(kBlack),
+                                    RooFit::LineWidth(1),
+
+                                    RooFit::Slice(cat_argset), 
+                                    RooFit::ProjWData(cat_argset,*data) ,
+                                    RooFit::Components(Form("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s",str_DsKK.c_str(),str_Bs2DsstDs.c_str(),str_B02DsD.c_str(),str_Bs2DsDs.c_str(),str_DsstKK.c_str(),str_DsD.c_str(),str_Dsa1.c_str(),str_PartReco.c_str(),str_DsstKKst.c_str(),str_comb.c_str())),
+                                    RooFit::DrawOption("F"),
+                                    RooFit::Name("DsKK") );
+
+                        // ------------------------------------------
+                        // Combinatoric + Ds*Phi + Dsa1 + DsDs
+                        // ------------------------------------------
+                        sim->plotOn(  plot[*h][*ds][*ph][*c][*a],
+                                      RooFit::LineColor(kWhite),
+                                      RooFit::FillColor(kWhite),
+                                      RooFit::LineWidth(0),
+                                      RooFit::Slice(cat_argset), 
+                                      RooFit::ProjWData(cat_argset,*data) ,
+                                      RooFit::Components(Form("%s,%s,%s,%s,%s,%s,%s,%s,%s",str_Bs2DsstDs.c_str(),str_B02DsD.c_str(),str_Bs2DsDs.c_str(),str_DsstKK.c_str(),str_DsD.c_str(),str_Dsa1.c_str(),str_PartReco.c_str(),str_DsstKKst.c_str(),str_comb.c_str())),
+                                      RooFit::DrawOption("F"));
+
+                        sim->plotOn(  plot[*h][*ds][*ph][*c][*a],
+                                      //RooFit::FillColor(kBlue), //
+                                      //RooFit::LineWidth(0),
+                                      
+                                      RooFit::LineColor(kBlack),
+                                      RooFit::FillColor(kBlack),
+                                      RooFit::LineWidth(1),
+                                      RooFit::FillStyle(3254),
+
                                       RooFit::Slice(cat_argset), 
                                       RooFit::ProjWData(cat_argset,*data) ,
                                       //RooFit::Components(Form("pdf_Dsa1_%s,pdf_PartReco_%s,pdf_DsstKKst_%s,pdf_comb_%s",cat_str.c_str(),cat_str.c_str(),cat_str.c_str(),cat_str.c_str())),
                                       RooFit::Components(Form("%s,%s,%s,%s,%s,%s,%s,%s,%s",str_Bs2DsstDs.c_str(),str_B02DsD.c_str(),str_Bs2DsDs.c_str(),str_DsstKK.c_str(),str_DsD.c_str(),str_Dsa1.c_str(),str_PartReco.c_str(),str_DsstKKst.c_str(),str_comb.c_str())),
-                                      RooFit::FillColor(kBlue), //
                                       RooFit::DrawOption("F"),
-                                      RooFit::LineWidth(0),
                                       RooFit::Name("Bs2DsstDs"));
                         
                         // ------------------------------------------
@@ -1911,94 +2058,180 @@ void DsPhiFitting::RunFullFit(bool draw=true)
                         // ------------------------------------------
                         
                         sim->plotOn(  plot[*h][*ds][*ph][*c][*a],
-                                      //RooFit::Slice(RooArgSet(*cat)), 
-                                      //RooFit::ProjWData(RooArgSet(*cat),*data) ,
+                                      //RooFit::FillColor(kYellow), //
+                                      //RooFit::LineWidth(0),
+
+                                      RooFit::LineColor(kBlack),
+                                      RooFit::FillColor(14),
+                                      RooFit::LineWidth(1),
+
                                       RooFit::Slice(cat_argset), 
                                       RooFit::ProjWData(cat_argset,*data) ,
                                       //RooFit::Components(Form("pdf_Dsa1_%s,pdf_PartReco_%s,pdf_DsstKKst_%s,pdf_comb_%s",cat_str.c_str(),cat_str.c_str(),cat_str.c_str(),cat_str.c_str())),
                                       RooFit::Components(Form("%s,%s,%s,%s,%s,%s,%s,%s",str_B02DsD.c_str(),str_Bs2DsDs.c_str(),str_DsstKK.c_str(),str_DsD.c_str(),str_Dsa1.c_str(),str_PartReco.c_str(),str_DsstKKst.c_str(),str_comb.c_str())),
-                                      RooFit::FillColor(kYellow), //
                                       RooFit::DrawOption("F"),
-                                      RooFit::LineWidth(0),
                                       RooFit::Name("B02DsD"));
+                        sim->plotOn(  plot[*h][*ds][*ph][*c][*a],
+                                      RooFit::LineColor(kBlack),
+                                      RooFit::FillColor(kBlack),
+                                      RooFit::LineWidth(1),
+                                      RooFit::Slice(cat_argset), 
+                                      RooFit::ProjWData(cat_argset,*data) ,
+                                      //RooFit::Components(Form("pdf_Dsa1_%s,pdf_PartReco_%s,pdf_DsstKKst_%s,pdf_comb_%s",cat_str.c_str(),cat_str.c_str(),cat_str.c_str(),cat_str.c_str())),
+                                      RooFit::Components(Form("%s,%s,%s,%s,%s,%s,%s,%s",str_B02DsD.c_str(),str_Bs2DsDs.c_str(),str_DsstKK.c_str(),str_DsD.c_str(),str_Dsa1.c_str(),str_PartReco.c_str(),str_DsstKKst.c_str(),str_comb.c_str())),
+                                      RooFit::DrawOption("L"));
                        
                         
                         // ------------------------------------------
                         // Combinatoric + Ds*Phi + Dsa1 + test
                         // ------------------------------------------
                         sim->plotOn(  plot[*h][*ds][*ph][*c][*a],
-                                      //RooFit::Slice(RooArgSet(*cat)), 
-                                      //RooFit::ProjWData(RooArgSet(*cat),*data) ,
+                                      RooFit::FillColor(kWhite), //
+                                      RooFit::LineColor(kWhite), //
+                                      RooFit::LineWidth(0),
+                                      RooFit::Slice(cat_argset), 
+                                      RooFit::ProjWData(cat_argset,*data) ,
+                                      RooFit::Components(Form("%s,%s,%s,%s,%s,%s,%s",str_Bs2DsDs.c_str(),str_DsstKK.c_str(),str_DsD.c_str(),str_Dsa1.c_str(),str_PartReco.c_str(),str_DsstKKst.c_str(),str_comb.c_str())),
+                                      RooFit::DrawOption("F"));
+                        sim->plotOn(  plot[*h][*ds][*ph][*c][*a],
+                                      RooFit::FillColor(kBlack), //
+                                      RooFit::LineColor(kBlack), //
+                                      RooFit::LineWidth(1),
+                                      RooFit::Slice(cat_argset), 
+                                      RooFit::ProjWData(cat_argset,*data) ,
+                                      RooFit::Components(Form("%s,%s,%s,%s,%s,%s,%s",str_Bs2DsDs.c_str(),str_DsstKK.c_str(),str_DsD.c_str(),str_Dsa1.c_str(),str_PartReco.c_str(),str_DsstKKst.c_str(),str_comb.c_str())),
+                                      RooFit::DrawOption("L"));
+                        sim->plotOn(  plot[*h][*ds][*ph][*c][*a],
+                                      //RooFit::FillColor(kOrange), //
+                                      //RooFit::LineWidth(0),
+
+                                      RooFit::LineColor(kBlack),
+                                      RooFit::FillColor(kBlack),
+                                      RooFit::LineWidth(1),
+                                      RooFit::FillStyle(3205),
+
                                       RooFit::Slice(cat_argset), 
                                       RooFit::ProjWData(cat_argset,*data) ,
                                       //RooFit::Components(Form("pdf_Dsa1_%s,pdf_PartReco_%s,pdf_DsstKKst_%s,pdf_comb_%s",cat_str.c_str(),cat_str.c_str(),cat_str.c_str(),cat_str.c_str())),
                                       RooFit::Components(Form("%s,%s,%s,%s,%s,%s,%s",str_Bs2DsDs.c_str(),str_DsstKK.c_str(),str_DsD.c_str(),str_Dsa1.c_str(),str_PartReco.c_str(),str_DsstKKst.c_str(),str_comb.c_str())),
-                                      RooFit::FillColor(kOrange), //
                                       RooFit::DrawOption("F"),
-                                      RooFit::LineWidth(0),
                                       RooFit::Name("Bs2DsDs"));
 
                         // ------------------------------------------
                         // Combinatoric + Ds*Phi + Dsa1
                         // ------------------------------------------
                         sim->plotOn(  plot[*h][*ds][*ph][*c][*a],
-                                      //RooFit::Slice(RooArgSet(*cat)), 
-                                      //RooFit::ProjWData(RooArgSet(*cat),*data) ,
+                                      //RooFit::FillColor(kGreen+2), 
+                                      //RooFit::LineStyle(kSolid) ,
+                                      //RooFit::LineWidth(0),
+
+                                      RooFit::LineColor(kBlack),
+                                      RooFit::FillColor(16),
+                                      RooFit::LineWidth(1),
+
                                       RooFit::Slice(cat_argset), 
                                       RooFit::ProjWData(cat_argset,*data) ,
                                       //RooFit::Components(Form("pdf_PartReco_%s,pdf_DsstKKst_%s,pdf_Dsa1_%s,pdf_comb_%s",cat_str.c_str(),cat_str.c_str(),cat_str.c_str(),cat_str.c_str())),
                                       RooFit::Components(Form("%s,%s,%s,%s",str_PartReco.c_str(),str_DsstKKst.c_str(),str_Dsa1.c_str(),str_comb.c_str())),
-                                      RooFit::LineWidth(0),
-                                      RooFit::LineStyle(kSolid) ,
-                                      RooFit::FillColor(kGreen+2), 
                                       RooFit::DrawOption("F") ,
                                       RooFit::Name("Dsa1")); 
-                        // ------------------------------------------
-                        // Combinatoric + Dsa1
-                        // ------------------------------------------
                         sim->plotOn(  plot[*h][*ds][*ph][*c][*a],
-                                    //RooFit::Slice(RooArgSet(*cat)), 
-                                    //RooFit::ProjWData(RooArgSet(*cat),*data) ,
-                                    RooFit::Slice(cat_argset), 
-                                    RooFit::ProjWData(cat_argset,*data) ,
-                                    //RooFit::Components(Form("pdf_DsstKKst_%s,pdf_PartReco_%s,pdf_comb_%s",cat_str.c_str(),cat_str.c_str(),cat_str.c_str())), 
-                                    RooFit::Components(Form("%s,%s,%s",str_DsstKKst.c_str(),str_PartReco.c_str(),str_comb.c_str())), 
-                                    RooFit::FillColor(kGreen+1), //kAzure+5
-                                    RooFit::DrawOption("F"), 
-                                    RooFit::LineWidth(0),
-                                    RooFit::Name("DsstKKst") );
+                                      RooFit::LineColor(kBlack),
+                                      RooFit::FillColor(kBlack),
+                                      RooFit::LineWidth(1),
+                                      RooFit::Slice(cat_argset), 
+                                      RooFit::ProjWData(cat_argset,*data) ,
+                                      RooFit::Components(Form("%s,%s,%s,%s",str_PartReco.c_str(),str_DsstKKst.c_str(),str_Dsa1.c_str(),str_comb.c_str())),
+                                      RooFit::DrawOption("L")); 
 
                         // ------------------------------------------
                         // Combinatoric + Dsa1
                         // ------------------------------------------
                         sim->plotOn(  plot[*h][*ds][*ph][*c][*a],
-                                      //RooFit::Slice(RooArgSet(*cat)), 
-                                      //RooFit::ProjWData(RooArgSet(*cat),*data) ,
+                                      RooFit::LineColor(kWhite),
+                                      RooFit::FillColor(kWhite),
+                                      RooFit::LineWidth(0),
+                                      RooFit::Slice(cat_argset), 
+                                      RooFit::ProjWData(cat_argset,*data) ,
+                                      RooFit::Components(Form("%s,%s,%s",str_DsstKKst.c_str(),str_PartReco.c_str(),str_comb.c_str())), 
+                                      RooFit::DrawOption("F"));
+                        sim->plotOn(  plot[*h][*ds][*ph][*c][*a],
+                                      RooFit::LineColor(kBlack),
+                                      RooFit::FillColor(kBlack),
+                                      RooFit::LineWidth(1),
+                                      RooFit::Slice(cat_argset), 
+                                      RooFit::ProjWData(cat_argset,*data) ,
+                                      RooFit::Components(Form("%s,%s,%s",str_DsstKKst.c_str(),str_PartReco.c_str(),str_comb.c_str())), 
+                                      RooFit::DrawOption("L"));
+                        sim->plotOn(  plot[*h][*ds][*ph][*c][*a],
+                                      //RooFit::FillColor(kGreen+1), //kAzure+5
+                                      //RooFit::LineWidth(0),
+                                      
+                                      RooFit::LineColor(kBlack),
+                                      RooFit::FillColor(kBlack),
+                                      RooFit::LineWidth(1),
+                                      RooFit::FillStyle(3245),
+
+                                      RooFit::Slice(cat_argset), 
+                                      RooFit::ProjWData(cat_argset,*data) ,
+                                      //RooFit::Components(Form("pdf_DsstKKst_%s,pdf_PartReco_%s,pdf_comb_%s",cat_str.c_str(),cat_str.c_str(),cat_str.c_str())), 
+                                      RooFit::Components(Form("%s,%s,%s",str_DsstKKst.c_str(),str_PartReco.c_str(),str_comb.c_str())), 
+                                      RooFit::DrawOption("F"), 
+                                      RooFit::Name("DsstKKst") );
+
+                        // ------------------------------------------
+                        // Combinatoric + Dsa1
+                        // ------------------------------------------
+                        sim->plotOn(  plot[*h][*ds][*ph][*c][*a],
+                                      RooFit::FillColor(kWhite), 
+                                      RooFit::LineColor(kWhite), 
+                                      RooFit::LineWidth(0),
+                                      RooFit::Slice(cat_argset), 
+                                      RooFit::ProjWData(cat_argset,*data) ,
+                                      RooFit::Components(Form("%s,%s",str_PartReco.c_str(),str_comb.c_str())),
+                                      RooFit::DrawOption("F"));
+                        sim->plotOn(  plot[*h][*ds][*ph][*c][*a],
+                                      //RooFit::FillColor(kGreen), 
+                                      //RooFit::LineStyle(kSolid) ,
+                                      //RooFit::LineWidth(0),
+                                      
+                                      RooFit::LineColor(kBlack),
+                                      RooFit::FillColor(14),
+                                      RooFit::LineWidth(1),
+                                      RooFit::FillStyle(3344),
+
                                       RooFit::Slice(cat_argset), 
                                       RooFit::ProjWData(cat_argset,*data) ,
                                       //RooFit::Components(Form("pdf_PartReco_%s,pdf_comb_%s",cat_str.c_str(),cat_str.c_str())),
                                       RooFit::Components(Form("%s,%s",str_PartReco.c_str(),str_comb.c_str())),
-                                      RooFit::LineWidth(0),
-                                      RooFit::LineStyle(kSolid) ,
-                                      RooFit::FillColor(kGreen), 
                                       RooFit::DrawOption("F"),
                                       RooFit::Name("DsstPhi") );                       
-                      
+                        sim->plotOn(  plot[*h][*ds][*ph][*c][*a],
+                                      RooFit::FillColor(kBlack), 
+                                      RooFit::LineColor(kBlack), 
+                                      RooFit::LineWidth(1),
+                                      RooFit::Slice(cat_argset), 
+                                      RooFit::ProjWData(cat_argset,*data) ,
+                                      RooFit::Components(Form("%s,%s",str_PartReco.c_str(),str_comb.c_str())),
+                                      RooFit::DrawOption("L"));
                       }
                       
                       // ------------------------------------------
                       // Combinatoric
                       // ------------------------------------------
                       sim->plotOn(  plot[*h][*ds][*ph][*c][*a],
-                                    //RooFit::Slice(RooArgSet(*cat)), 
-                                    //RooFit::ProjWData(RooArgSet(*cat),*data) ,
+                                    //RooFit::FillColor(kAzure-7), 
+                                    //RooFit::LineStyle(kDotted),
+                                    //RooFit::LineWidth(0),
+                                    
+                                    RooFit::LineColor(12),
+                                    RooFit::FillColor(12),
+                                    RooFit::LineWidth(0),
+
                                     RooFit::Slice(cat_argset), 
                                     RooFit::ProjWData(cat_argset,*data) ,
                                     //RooFit::Components(Form("pdf_comb_%s",cat_str.c_str())),
                                     RooFit::Components(Form("%s",str_comb.c_str())),
-                                    RooFit::LineWidth(0),
-                                    RooFit::LineStyle(kDotted),
-                                    RooFit::FillColor(kAzure-7), 
                                     RooFit::DrawOption("F"),
                                     RooFit::Name("Combinatoric") );
                       
@@ -2017,14 +2250,31 @@ void DsPhiFitting::RunFullFit(bool draw=true)
                                     //RooFit::Slice(cat_argset), 
                                     //RooFit::ProjWData(RooArgSet(*cat),*data) ,
                                     RooFit::Components(Form("%s",str_total.c_str())),
-                                    RooFit::LineWidth(2),
+                                    RooFit::LineWidth(1.5),
                                     RooFit::LineColor(kBlack));
 
                       if(canRes) hresid = plot[*h][*ds][*ph][*c][*a]->pullHist();
                       
-
+                      if((*b)==DsD0){
+                        // ------------------------------------------
+                        // DsD0 Signal
+                        // ------------------------------------------
+                        sim->plotOn(  plot[*h][*ds][*ph][*c][*a],
+                                      //RooFit::Slice(RooArgSet(*cat)), 
+                                      //RooFit::ProjWData(RooArgSet(*cat),*data) ,
+                                      RooFit::Slice(cat_argset), 
+                                      RooFit::ProjWData(cat_argset,*data) ,
+                                      //RooFit::Components(Form("pdf_peak_%s",cat_str.c_str())),
+                                      RooFit::Components(Form("%s",str_peak.c_str())),
+                                      RooFit::LineWidth(3),
+                                      RooFit::LineStyle(kSolid) ,
+                                      RooFit::LineColor(kRed)  ,
+                                      RooFit::FillColor(kRed),
+                                      RooFit::Name("Signal") );
+                      }
+                      /*
                       // ------------------------------------------
-                      // Signal
+                      // DsKK
                       // ------------------------------------------
                       sim->plotOn(  plot[*h][*ds][*ph][*c][*a],
                                     //RooFit::Slice(RooArgSet(*cat)), 
@@ -2032,18 +2282,21 @@ void DsPhiFitting::RunFullFit(bool draw=true)
                                     RooFit::Slice(cat_argset), 
                                     RooFit::ProjWData(cat_argset,*data) ,
                                     //RooFit::Components(Form("pdf_peak_%s",cat_str.c_str())),
-                                    RooFit::Components(Form("%s",str_peak.c_str())),
-                                    RooFit::LineWidth(3),
-                                    RooFit::LineStyle(kSolid) ,
-                                    RooFit::LineColor(kRed)  ,
-                                    RooFit::FillColor(kRed),
-                                    RooFit::Name("Signal") );
+                                    RooFit::Components(Form("%s",str_DsKK.c_str())),
+                                    RooFit::DrawOption("F"),
+                                    RooFit::FillStyle(3002) ,
+                                    RooFit::FillColor(kGray),
+                                    RooFit::Name("DsKK") );
+                    */
                     } //closes if(par->doDraw)
                     
                     data->plotOn( plot[*h][*ds][*ph][*c][*a],
                                   //RooFit::Cut(Form("cat==cat::%s",cat_str.c_str())), 
                                   RooFit::Cut(cat_cut.c_str()), 
-                                  RooFit::DrawOption("PZ") );
+                                  RooFit::DrawOption("PZ"), 
+                                  RooFit::MarkerSize(0.8),
+                                  RooFit::Name("data") );
+
           	      } //closes else
                     
                     
@@ -2068,7 +2321,7 @@ void DsPhiFitting::RunFullFit(bool draw=true)
                     float x1=(iX+1)*padwidth+leftmargin;
                     float y0=iY*padheight+(iY?bottommargin:0);
                     float y1=(iY+1)*padheight+bottommargin;
-                    //std::cout<<"Laurence: x0 = "<<x0<<", x1 = "<<x1<<", y0 = "<<y0<<", y1 = "<<y1<<std::endl; //for debugging
+                    std::cout<<"Laurence: x0 = "<<x0<<", x1 = "<<x1<<", y0 = "<<y0<<", y1 = "<<y1<<std::endl; //for debugging
                     canpad[*h][*ds][*ph][*b][*m][*c][*a] = new TPad(Form("pad_%s",cat_str.c_str()),"",x0,y0,x1,y1);
                     canpad[*h][*ds][*ph][*b][*m][*c][*a]->SetRightMargin( xgutter/(x1-x0));
                     canpad[*h][*ds][*ph][*b][*m][*c][*a]->SetTopMargin(   ygutter/(y1-y0));
@@ -2081,93 +2334,167 @@ void DsPhiFitting::RunFullFit(bool draw=true)
                     plot[*h][*ds][*ph][*c][*a]->Draw();
                     plot[*h][*ds][*ph][*c][*a]->SetTitle("");
                  
-                    if( (iY or (nX-iX>1) ) ){ plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetTitle("");}else if((*b).c_str()==DsPhiSide){plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetTitleSize(0.045/(y1-y0));plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetTitle("#phi Sideband #font[12]{m}(#font[12]{D_{s}#phi}) [MeV/#font[12]{c}^{2}] ");}
-                    if( (iY or (nX-iX>1) ) ){ plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetTitle("");}else if((*b).c_str()==DsPhi){plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetTitleSize(0.045/(y1-y0));plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetTitle("#font[12]{m}(#font[12]{D_{s}#phi}) [MeV/#font[12]{c}^{2}] ");}
-                    if( (iY or (nX-iX>1) ) ){ plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetTitle("");}else if((*b).c_str()==DsD0 ){plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetTitleSize(0.045/(y1-y0));plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetTitle("#font[12]{m}(#font[12]{D_{s}D^{0}}) [MeV/#font[12]{c}^{2}] ");}
-                    if( iX or (nY-iY>1)){ plot[*h][*ds][*ph][*c][*a]->GetYaxis()->SetTitle("");}else{plot[*h][*ds][*ph][*c][*a]->GetYaxis()->SetTitleSize(0.045/(y1-y0));plot[*h][*ds][*ph][*c][*a]->GetYaxis()->SetTitle(Form("Events / ( %i MeV/#font[12]{c}^{2} ) ",int(binWidth)));}
-                    if(iY){ plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetLabelColor(0); }else{plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetLabelSize(0.045/(y1-y0));}
-                    if(iX){ plot[*h][*ds][*ph][*c][*a]->GetYaxis()->SetLabelColor(0); }else{plot[*h][*ds][*ph][*c][*a]->GetYaxis()->SetLabelSize(0.045/(y1-y0));}
-                    plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetTitleOffset(0.9);
-              	    plot[*h][*ds][*ph][*c][*a]->GetYaxis()->SetTitleOffset(1.0);
+                    //if( (iY or (nX-iX>1) ) ){ plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetTitle("");}else if((*b).c_str()==DsPhiSideWide){plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetTitleSize(0.045/(y1-y0));plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetTitle("#phi Sideband wide #font[12]{m}(#font[12]{D_{s}^{+}#phi}) [MeV/#font[12]{c}^{2}] ");}
+                    //if( (iY or (nX-iX>1) ) ){ plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetTitle("");}else if((*b).c_str()==DsPhiSide){plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetTitleSize(0.045/(y1-y0));plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetTitle("#font[12]{m}(#font[12]{D_{s}^{+}#phi}) [MeV/#font[12]{c}^{2}] ");}
+                    //if( (iY or (nX-iX>1) ) ){ plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetTitle("");}else if((*b).c_str()==DsPhi){plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetTitleSize(0.045/(y1-y0));plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetTitle("#font[12]{m}(#font[12]{D_{s}^{+}#phi}) [MeV/#font[12]{c}^{2}] ");}
+                    //if( (iY or (nX-iX>1) ) ){ plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetTitle("");}else if((*b).c_str()==DsD0 ){plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetTitleSize(0.045/(y1-y0));plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetTitle("#font[12]{m}(#font[12]{D_{s}^{+}D^{0}}) [MeV/#font[12]{c}^{2}] ");}
+                    
+                    if((*b).c_str()==DsPhiSideWide ){ 
+                      // plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetTitleSize(0.045/(x1-x0));
+                      // plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetLabelSize(0.045/(x1-x0));
+                      plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetTitleSize(0.045);
+                      plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetLabelSize(0.045);
+                      plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetTitle("#font[12]{m}(#font[12]{D_{s}^{+}#it{#phi}}) [MeV/#font[12]{c}^{2}] ");
+                    }
+                    
+                    if((*b).c_str()==DsPhiSide     ){ 
+                      // plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetTitleSize(0.045/(y1-y0));
+                      // plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetLabelSize(0.045/(y1-y0));
+                      plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetTitleSize(0.045);
+                      plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetLabelSize(0.045);
+                      plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetTitle("#font[12]{m}(#font[12]{D_{s}^{+}#it{#phi}}) [MeV/#font[12]{c}^{2}] ");
+                    }
+                    
+                    if((*b).c_str()==DsPhi         ){ 
+                      // plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetTitleSize(0.045/(y1-y0));
+                      // plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetLabelSize(0.045/(y1-y0));
+                      plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetTitleSize(0.045);
+                      plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetLabelSize(0.045);
+                      plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetTitle("#font[12]{m}(#font[12]{D_{s}^{+}#it{#phi}}) [MeV/#font[12]{c}^{2}] ");
+                    }
+                    
+                    if((*b).c_str()==DsD0          ){ 
+                      // plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetTitleSize(0.045/(y1-y0));
+                      // plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetLabelSize(0.045/(y1-y0));
+                      plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetTitleSize(0.045);
+                      plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetLabelSize(0.045);
+                      plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetTitle("#font[12]{m}(#font[12]{D_{s}^{+}D^{0}}) [MeV/#font[12]{c}^{2}] ");
+                    }
+                    
+
+
+                    if( iX or (nY-iY>1)){ 
+                      plot[*h][*ds][*ph][*c][*a]->GetYaxis()->SetTitle("");
+                    }else{
+                      plot[*h][*ds][*ph][*c][*a]->GetYaxis()->SetTitleSize(0.045/(y1-y0));
+                      plot[*h][*ds][*ph][*c][*a]->GetYaxis()->SetTitle(Form("Candidates / ( %i MeV/#font[12]{c}^{2} ) ",int(binWidth)));
+                    }
+
+                    // if(iY){ 
+                    //   plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetLabelColor(0); 
+                    //   plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetLabelSize(0.045/(y1-y0));
+                    // }else{
+                    //   plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetLabelSize(0.045/(y1-y0));
+                    // }
+
+                    if(iX){ 
+                      plot[*h][*ds][*ph][*c][*a]->GetYaxis()->SetLabelColor(0); 
+                    }else{
+                      plot[*h][*ds][*ph][*c][*a]->GetYaxis()->SetLabelSize(0.045/(y1-y0));
+                    }
+
+                    plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetLabelFont(133);
+
+                    plot[*h][*ds][*ph][*c][*a]->GetYaxis()->SetLabelFont(133);
+                    plot[*h][*ds][*ph][*c][*a]->GetYaxis()->SetLabelSize(0.045);
+
+                    plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetTitleOffset(1.0);
+              	    plot[*h][*ds][*ph][*c][*a]->GetYaxis()->SetTitleOffset(1.2);
+                    //plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetLabelSize(0.045*(x1-x0));
+                    //plot[*h][*ds][*ph][*c][*a]->GetYaxis()->SetLabelSize(0.045*(x1-x0));
+                    plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetLabelOffset(0.01);
+                    plot[*h][*ds][*ph][*c][*a]->GetYaxis()->SetLabelOffset(0.01);
+
+                    if( iX or (nY-iY>1)){
+                      plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetLabelSize(0.050);
+                      std::cout << "Using larger X axis label font" << std::endl;
+                    } else {
+                      plot[*h][*ds][*ph][*c][*a]->GetXaxis()->SetLabelSize(0.045);
+                      std::cout << "Using smaller X axis label font" << std::endl;
+
+                    }
+
                     // Draw B decay title
-                    x0=((iX?0:leftmargin)+padwidth*0.79)/(padwidth+(iX?0:leftmargin));
-                    x1=((iX?0:leftmargin)+padwidth*0.99)/(padwidth+(iX?0:leftmargin));
-                    y0=((iY?0:bottommargin)+padheight*0.89)/(padheight+(iY?0:bottommargin));
-                    y1=((iY?0:bottommargin)+padheight*0.99)/(padheight+(iY?0:bottommargin));
+                    x0=((iX?0:leftmargin)+padwidth*0.1)/(padwidth+(iX?0:leftmargin));
+                    x1=((iX?0:leftmargin)+padwidth*0.25)/(padwidth+(iX?0:leftmargin));
+                    y0=((iY?0:bottommargin)+padheight*0.79)/(padheight+(iY?0:bottommargin));
+                    y1=((iY?0:bottommargin)+padheight*0.89)/(padheight+(iY?0:bottommargin));
                     //std::cout<<"Title: x0 = "<<x0<<", x1 = "<<x1<<", y0 = "<<y0<<", y1 = "<<y1<<std::endl; //for debugging
                     TPaveLabel *pav = new TPaveLabel(x0,y0,x1,y1,title[*y][*h][*ds][*ph][*b][*m][*c][*a].c_str(),"NDC");
                     pav->SetBorderSize(0);
                     pav->SetFillStyle(0);
                     pav->SetTextFont(12);
                     pav->SetTextSize(0.5);
-                    pav->SetTextAlign(31);
-                    pav->Draw();
+                    pav->SetTextAlign(11);
+                    //pav->Draw();
                     // Draw LHCb unofficial 
-                    x0=((iX?0:leftmargin)+padwidth*0.75)/(padwidth+(iX?0:leftmargin));
-                    x1=((iX?0:leftmargin)+padwidth*0.95)/(padwidth+(iX?0:leftmargin));
-                    y0=((iY?0:bottommargin)+padheight*0.81)/(padheight+(iY?0:bottommargin));
-                    y1=((iY?0:bottommargin)+padheight*0.91)/(padheight+(iY?0:bottommargin));
+                    x0=((iX?0:leftmargin)+padwidth*0.1)/(padwidth+(iX?0:leftmargin));
+                    x1=((iX?0:leftmargin)+padwidth*0.25)/(padwidth+(iX?0:leftmargin));
+                    y0=((iY?0:bottommargin)+padheight*0.89)/(padheight+(iY?0:bottommargin));
+                    y1=((iY?0:bottommargin)+padheight*0.99)/(padheight+(iY?0:bottommargin));
                     //std::cout<<"LHCb: x0 = "<<x0<<", x1 = "<<x1<<", y0 = "<<y0<<", y1 = "<<y1<<std::endl; //for debugging       
                     TPaveLabel* lhcblabel = new TPaveLabel(x0,y0,x1,y1,"LHCb","NDC");
                     lhcblabel->SetBorderSize(0);
                     lhcblabel->SetFillStyle(0);
                     lhcblabel->SetTextSize(0.5);
                     lhcblabel->SetTextFont(62); 
-                    lhcblabel->SetTextAlign(31);  
+                    lhcblabel->SetTextAlign(11);  
                     if(!par->genToys||state==UNBLIND) lhcblabel->Draw();
                     // Draw 
-                    x0=((iX?0:leftmargin)+padwidth*0.79)/(padwidth+(iX?0:leftmargin));
-                    x1=((iX?0:leftmargin)+padwidth*0.99)/(padwidth+(iX?0:leftmargin));
-                    y0=((iY?0:bottommargin)+padheight*0.73)/(padheight+(iY?0:bottommargin));
-                    y1=((iY?0:bottommargin)+padheight*0.83)/(padheight+(iY?0:bottommargin));
+                    x0=((iX?0:leftmargin)+padwidth*0.1)/(padwidth+(iX?0:leftmargin));
+                    x1=((iX?0:leftmargin)+padwidth*0.25)/(padwidth+(iX?0:leftmargin));
+                    y0=((iY?0:bottommargin)+padheight*0.79)/(padheight+(iY?0:bottommargin));
+                    y1=((iY?0:bottommargin)+padheight*0.89)/(padheight+(iY?0:bottommargin));
                     //std::cout<<"Details: x0 = "<<x0<<", x1 = "<<x1<<", y0 = "<<y0<<", y1 = "<<y1<<std::endl; //for debugging
                     TPaveLabel *pav2 = new TPaveLabel(x0,y0,x1,y1,bin_detail[*y][*h][*ds][*ph][*b][*m][*c][*a].c_str(),"NDC");
                     pav2->SetBorderSize(0);
                     pav2->SetFillStyle(0);
                     pav2->SetTextFont(132);
                     pav2->SetTextSize(0.5);
-                    pav2->SetTextAlign(31);
+                    pav2->SetTextAlign(11);
                     pav2->Draw();
 
-                    x0=((iX?0:leftmargin)+padwidth*0.79)/(padwidth+(iX?0:leftmargin));
-                    x1=((iX?0:leftmargin)+padwidth*0.99)/(padwidth+(iX?0:leftmargin));
-                    y0=((iY?0:bottommargin)+padheight*0.65)/(padheight+(iY?0:bottommargin));
-                    y1=((iY?0:bottommargin)+padheight*0.75)/(padheight+(iY?0:bottommargin));
+                    x0=((iX?0:leftmargin)+padwidth*0.1)/(padwidth+(iX?0:leftmargin));
+                    x1=((iX?0:leftmargin)+padwidth*0.25)/(padwidth+(iX?0:leftmargin));
+                    y0=((iY?0:bottommargin)+padheight*0.69)/(padheight+(iY?0:bottommargin));
+                    y1=((iY?0:bottommargin)+padheight*0.79)/(padheight+(iY?0:bottommargin));
                     //std::cout<<"Details: x0 = "<<x0<<", x1 = "<<x1<<", y0 = "<<y0<<", y1 = "<<y1<<std::endl; //for debugging
                     TPaveLabel *pav3 = new TPaveLabel(x0,y0,x1,y1,bin_detail2[*y][*h][*ds][*ph][*b][*m][*c][*a].c_str(),"NDC");
                     pav3->SetBorderSize(0);
                     pav3->SetFillStyle(0);
                     pav3->SetTextFont(132);
                     pav3->SetTextSize(0.5);
-                    pav3->SetTextAlign(31);
+                    pav3->SetTextAlign(11);
                     pav3->Draw();
 
 
-                    x0=((iX?0:leftmargin)+padwidth*0.49)/(padwidth+(iX?0:leftmargin));
-                    x1=((iX?0:leftmargin)+padwidth*0.89)/(padwidth+(iX?0:leftmargin));
-                    y0=((iY?0:bottommargin)+padheight*0.20)/(padheight+(iY?0:bottommargin));
-                    y1=((iY?0:bottommargin)+padheight*0.50)/(padheight+(iY?0:bottommargin));
+                    x0=((iX?0:leftmargin)+padwidth*0.45)/(padwidth+(iX?0:leftmargin));
+                    x1=((iX?0:leftmargin)+padwidth*0.94)/(padwidth+(iX?0:leftmargin));
+                    y0=((iY?0:bottommargin)+padheight*0.10)/(padheight+(iY?0:bottommargin));
+                    y1=((iY?0:bottommargin)+padheight*0.95)/(padheight+(iY?0:bottommargin));
                     gStyle->SetLegendBorderSize(0);
                     TLegend* leg = new TLegend(x0,y0,x1,y1);
                     if((*b).c_str() == DsD0){
-                      leg->AddEntry(plot[*h][*ds][*ph][*c][*a]->findObject("Signal"),     "B #rightarrow D_{s} D^{0}","l"); 
-                      leg->AddEntry(plot[*h][*ds][*ph][*c][*a]->findObject("DsstD0"),     "B #rightarrow D_{s}* D^{0}","f");
-                      leg->AddEntry(plot[*h][*ds][*ph][*c][*a]->findObject("DsDst0"),     "B #rightarrow D_{s} D*^{0}","f");
-                      leg->AddEntry(plot[*h][*ds][*ph][*c][*a]->findObject("DsstDst0"),   "B #rightarrow D_{s}* D*^{0}","f");
-                      leg->AddEntry(plot[*h][*ds][*ph][*c][*a]->findObject("Combinatoric"),"Combinatorics","f");
+                      leg->AddEntry(plot[*h][*ds][*ph][*c][*a]->findObject("Signal"),     "B^{+}#rightarrow D_{s}^{+}D^{0}","l"); 
+                      leg->AddEntry(plot[*h][*ds][*ph][*c][*a]->findObject("DsstD0"),     "B^{+}#rightarrow D_{s}^{*+}D^{0}","f");
+                      leg->AddEntry(plot[*h][*ds][*ph][*c][*a]->findObject("DsDst0"),     "B^{+}#rightarrow D_{s}^{+}D^{*0}","f");
+                      leg->AddEntry(plot[*h][*ds][*ph][*c][*a]->findObject("DsstDst0"),   "B^{+}#rightarrow D_{s}^{*+}D^{*0}","f");
+                      leg->AddEntry(plot[*h][*ds][*ph][*c][*a]->findObject("Combinatoric"),"Comb. background","f");
                       leg->SetTextFont(12);
                       if( !(iY or (nX-iX>1) ) )leg->Draw();
                     } else {
-                      if (state == UNBLIND) leg->AddEntry(plot[*h][*ds][*ph][*c][*a]->findObject("Signal"),      "D_{s} #phi","l"); 
-                      leg->AddEntry(plot[*h][*ds][*ph][*c][*a]->findObject("DsstPhi"),     "B^{+} #rightarrow D_{s}* #phi","f");
-                      leg->AddEntry(plot[*h][*ds][*ph][*c][*a]->findObject("Dsa1"),        "B_{s} #rightarrow D_{s} K K*^{0}","f");
-                      leg->AddEntry(plot[*h][*ds][*ph][*c][*a]->findObject("DsstKKst"),    "B_{s} #rightarrow D_{s}^{*} K K*^{0}","f");
-                      leg->AddEntry(plot[*h][*ds][*ph][*c][*a]->findObject("Bs2DsDs"),     "B_{s} #rightarrow D_{s} D_{s}","f");
-                      leg->AddEntry(plot[*h][*ds][*ph][*c][*a]->findObject("Bs2DsstDs"),   "B_{s} #rightarrow D_{s}^{*} D_{s}","f");
-                      leg->AddEntry(plot[*h][*ds][*ph][*c][*a]->findObject("B02DsD"),      "B^{0} #rightarrow D_{s} D (#rightarrow K K #pi)","f");
+                      leg->AddEntry(plot[*h][*ds][*ph][*c][*a]->findObject("data"),   "Data","lep");
+                      if (partialstate == UNBLIND) leg->AddEntry(plot[*h][*ds][*ph][*c][*a]->findObject("Signal"),      "B^{+}#rightarrow D_{s}^{+}#it{#phi}","f"); 
+                      if (partialstate == UNBLIND) leg->AddEntry(plot[*h][*ds][*ph][*c][*a]->findObject("DsKK"),      "B^{+}#rightarrow D_{s}^{+}K^{+}K^{#minus}","f"); 
+                      leg->AddEntry(plot[*h][*ds][*ph][*c][*a]->findObject("Bs2DsstDs"),   "B_{s}^{0}#rightarrow D_{s}^{*+}D_{s}^{#minus}","f");
+                      leg->AddEntry(plot[*h][*ds][*ph][*c][*a]->findObject("B02DsD"),      "B^{0}#rightarrow D_{s}^{+}D^{#minus}","f");
+                      leg->AddEntry(plot[*h][*ds][*ph][*c][*a]->findObject("Bs2DsDs"),     "B_{s}^{0}#rightarrow D_{s}^{+}D_{s}^{#minus}","f");
+                      leg->AddEntry(plot[*h][*ds][*ph][*c][*a]->findObject("Dsa1"),        "#bar{B}_{s}^{0}#rightarrow D_{s}^{+}K^{#minus}K^{*0}","f");
+                      leg->AddEntry(plot[*h][*ds][*ph][*c][*a]->findObject("DsstKKst"),    "#bar{B}_{s}^{0}#rightarrow D_{s}^{*+}K^{#minus}K^{*0}","f");
+                      leg->AddEntry(plot[*h][*ds][*ph][*c][*a]->findObject("DsstPhi"),     "B^{+}#rightarrow D_{s}^{*+}#it{#phi}","f");
                       //leg->AddEntry(plot[*h][*ds][*ph][*c][*a]->findObject("DsD"),         "B^{0} #rightarrow D_{s} D (misID)","f");
                       //leg->AddEntry(plot[*h][*ds][*ph][*c][*a]->findObject("DsstKK"),      "B^{+} #rightarrow D_{s}^{*} K K","f");
-                      leg->AddEntry(plot[*h][*ds][*ph][*c][*a]->findObject("Combinatoric"),"Combinatorics","f");
+                      leg->AddEntry(plot[*h][*ds][*ph][*c][*a]->findObject("Combinatoric"),"Comb. background","f");
                       leg->SetTextFont(12);
                       if( !(iY or (nX-iX>1) ) )leg->Draw();
                     }
@@ -2180,9 +2507,10 @@ void DsPhiFitting::RunFullFit(bool draw=true)
                       RooPlot* frame = mB.frame(RooFit::Title("Residual Distribution"));
                       hresid->SetFillColor(4);
                       hresid->SetLineColor(10);
-                      if ((*b)==DsPhiSide)frame->GetXaxis()->SetTitle("#phi Sideband #font[12]{m}(#font[12]{D_{s}#phi}) [MeV/#font[12]{c}^{2}] ");
-                      if ((*b)==DsPhi)    frame->GetXaxis()->SetTitle("#font[12]{m}(#font[12]{D_{s}#phi}) [MeV/#font[12]{c}^{2}] ");
-                      if ((*b)==DsD0)     frame->GetXaxis()->SetTitle("#font[12]{m}(#font[12]{D_{s}D^{0}}) [MeV/#font[12]{c}^{2}] ");
+                      if ((*b)==DsPhiSideWide)frame->GetXaxis()->SetTitle("#phi Sideband wide #font[12]{m}(#font[12]{D_{s}^{+}#it{#phi}}) [MeV/#font[12]{c}^{2}] ");
+                      if ((*b)==DsPhiSide)frame->GetXaxis()->SetTitle("#font[12]{m}(#font[12]{D_{s}^{+}#it{#phi}}) [MeV/#font[12]{c}^{2}] ");
+                      if ((*b)==DsPhi)    frame->GetXaxis()->SetTitle("#font[12]{m}(#font[12]{D_{s}^{+}#it{#phi}}) [MeV/#font[12]{c}^{2}] ");
+                      if ((*b)==DsD0)     frame->GetXaxis()->SetTitle("#font[12]{m}(#font[12]{D_{s}^{+}D^{0}}) [MeV/#font[12]{c}^{2}] ");
                       //frame->GetYaxis()->SetTitle("Residual");
                       frame->GetXaxis()->SetTitleOffset(0.9);
                       frame->GetXaxis()->SetTitleSize(0.045/(y1-y0));
@@ -2217,18 +2545,42 @@ void DsPhiFitting::RunFullFit(bool draw=true)
                     plot[*h][*ds][*ph][*c][*a]->SetMaximum(maxH);
                     plot[*h][*ds][*ph][*c][*a]->SetMinimum(0.01);
                     
-                    if(par->genToys&&((*b)==DsPhi || (*b)==DsPhiSide )) plot[*h][*ds][*ph][*c][*a]->SetMaximum(150);
+                    if(par->genToys&&((*b)==DsPhi || (*b)==DsPhiSide|| (*b)==DsPhiSideWide )) plot[*h][*ds][*ph][*c][*a]->SetMaximum(150);
 
-                    if( ((*b)==DsPhi || (*b)==DsPhiSide )and state==BLIND ){  
-                      canpad[*h][*ds][*ph][*b][*m][*c][*a]->cd();
+                    canpad[*h][*ds][*ph][*b][*m][*c][*a]->cd();
+                    if((*b)!=DsD0){
                       maxH = 100.0;
-                      if((*m)==Ds2KKPi)   maxH = 100.0;
-                      if((*m)==Ds2PhiPi)  maxH =  50.0;
-                      if((*m)==Ds2KPiPi)  maxH =  50.0;
-                      if((*m)==Ds2PiPiPi) maxH =  50.0;
+                      if((*m)==Ds2KKPi)   maxH =  80.0;
+                      if((*m)==Ds2PhiPi)  maxH =  40.0;
+                      if((*m)==Ds2KPiPi)  maxH =  20.0;
+                      if((*m)==Ds2PiPiPi) maxH =  20.0;
 
-                      if(par->doMerge) maxH = 150;
+    
+                      if((*m)==Ds2KKPi   && binWidth==20 ) maxH =  60.0;
+                      if((*m)==Ds2PhiPi  && binWidth==20 ) maxH =  30.0;
+                      if((*m)==Ds2KPiPi  && binWidth==20 ) maxH =  15.0;
+                      if((*m)==Ds2PiPiPi && binWidth==20 ) maxH =  15.0;
+
+                      if((*m).c_str() == merged) maxH = 150;
+                      if(((*m).c_str() == merged)&&binWidth==20) maxH = 100;
+                      
+                      if(!(par->sumOverCharges)) maxH = maxH/2.0;
+
                       plot[*h][*ds][*ph][*c][*a]->SetMaximum(maxH);
+                    }
+                    //if( ((*b)==DsPhi || (*b)==DsPhiSide )and state==BLIND ){
+                    if( ( ( (*b).c_str()==DsPhi     && (*h).c_str()==Helbin1 ) and state==BLIND)        ||    
+                        ( ( (*b).c_str()==DsPhi     && (*h).c_str()==Helbin2 ) and partialstate==BLIND) ||    
+                        ( ( (*b).c_str()==DsPhiSide && (*h).c_str()==Helbin1 ) and partialstate==BLIND) ||    
+                        ( ( (*b).c_str()==DsPhiSide && (*h).c_str()==Helbin2 ) and partialstate==BLIND) ||    
+                        ( ( (*b).c_str()==DsPhiSideWide && (*h).c_str()==Helbin1 ) and partialstate==BLIND) ||    
+                        ( ( (*b).c_str()==DsPhiSideWide && (*h).c_str()==Helbin2 ) and partialstate==BLIND) ||  
+                        ( ( (*b).c_str()==DsPhi     && (*h).c_str()==both )    and state==BLIND)        ||  
+                        ( ( (*b).c_str()==DsPhiSide && (*h).c_str()==both )    and partialstate==BLIND) ||  
+                        ( ( (*b).c_str()==DsPhiSideWide && (*h).c_str()==both )    and partialstate==BLIND)    ){
+
+                      
+                      
                       TPaveLabel *blindpav = new TPaveLabel(5220,0.000001,5340,maxH-0.5,"BLIND","");
                       blindpav->SetBorderSize(0); 
                       blindpav->SetTextSize(0.1); 
@@ -2248,16 +2600,799 @@ void DsPhiFitting::RunFullFit(bool draw=true)
         
         canvas->Print(Form("results/%s.eps",canvas->GetName()));
         canvas->Print(Form("results/%s.pdf",canvas->GetName()));
-        //canvas->Print(Form("results/%s.png",canvas->GetName()));
+        canvas->Print(Form("results/%s.C",canvas->GetName()));
+        canvas->Print(Form("results/%s.root",canvas->GetName()));
+        canvas->Print(Form("results/%s.png",canvas->GetName()));
         if(canRes){
          canRes->Print(Form("results/%s.eps",canRes->GetName()));
          canRes->Print(Form("results/%s.pdf",canRes->GetName()));
-         //canRes->Print(Form("results/%s.png",canRes->GetName()));
+         canRes->Print(Form("results/%s.C",canRes->GetName()));
+         canRes->Print(Form("results/%s.root",canRes->GetName()));
+         canRes->Print(Form("results/%s.png",canRes->GetName()));
         }
 
       } //end of loop over modeList 
     }//end of loop over BmodeList 
   }//end of loop over typeList 
+
+  //if(par->SetLimits){
+  //  if(par->debug) std::cout<<"Running: DsPhiFitting::RunFullFit() --> Setting limits...  "<<std::endl;
+  //  SetLimits();
+  //}
+
+
+}
+
+void DsPhiFitting::SetLimits2(){
+  if(par->debug) std::cout<<"Running: DsPhiFitting::SetLimits()"<<std::endl;
+  
+  RooSimultaneous* sim=model->Pdf();
+  RooCategory*     cat=model->Cat();
+  RooAbsReal*      branching_fraction_all=model->BranchingFraction();
+  RooAbsReal*      f_param=model->ConstraintParam();
+  
+  bool withConstraints = false;
+  if(withConstraints){
+    if(par->debug) std::cout<<"Running: DsPhiFitting::SetLimits() --> With Constraint" << std::endl;
+  } else {
+    if(par->debug) std::cout<<"Running: DsPhiFitting::SetLimits() --> Without Constraint" << std::endl;
+    ((RooRealVar*)f_param)->setConstant();
+  }
+  
+  RooWorkspace* w = new RooWorkspace("w");
+  
+
+
+  w->import(*sim);
+  w->import(*cat);
+  w->import(*data);  
+
+  w->Print();
+
+}
+
+
+
+void DsPhiFitting::SetLimits(){
+
+
+  if(par->debug) std::cout<<"Running: DsPhiFitting::SetLimits()"<<std::endl;
+  // Need to be in scope:
+  // ---> mB 
+  mB.Print();
+  // ---> data
+  data->Print();
+  // ---> sim
+
+  bool withConstraints = false;
+  RooAbsReal* f_param=model->ConstraintParam();
+
+  if(withConstraints){
+    if(par->debug) std::cout<<"Running: DsPhiFitting::SetLimits() --> With Constraint" << std::endl;
+  } else {
+    if(par->debug) std::cout<<"Running: DsPhiFitting::SetLimits() --> Without Constraint" << std::endl;
+    ((RooRealVar*)f_param)->setConstant();
+  }
+
+  RooSimultaneous* sim=model->Pdf();
+  
+  RooRealVar* Br_syst_m;
+  RooRealVar* Br_syst_w;
+  RooGaussian* Br_syst_constrained;
+  
+  Br_syst_m = new RooRealVar("Br_syst_m", "" , 0.0);
+  Br_syst_w = new RooRealVar("Br_syst_w", "" , 0.788);
+  Br_syst_constrained = new RooGaussian("Br_syst_constrained","Br_syst_constrained",*Br_syst_m,*f_param,*Br_syst_w);
+
+
+  //RooAbsPdf* fconstraint=model->Constraint();
+
+  RooProdPdf *modelc = new RooProdPdf("modelc","model with constraint",RooArgSet(*sim,*Br_syst_constrained)) ;
+    
+  // ---> cat
+  RooCategory* cat=model->Cat();
+  // ---> branching_fraction
+  RooAbsReal* branching_fraction_all=model->BranchingFraction();
+  
+
+  std::cout << "============= Constant variables ==============\n" << std::endl ;
+  RooRealVar* var=0;
+  RooArgSet* vars = sim->getVariables();
+  TIterator* it = vars->createIterator();
+  int nv = 0; 
+  while((var = (RooRealVar*)it->Next())) {
+    if (var->isConstant()){
+      nv++;
+      std::cout << "Variable " << nv << "\t -> Initial Value: " << var->getVal();
+      std::cout<< "\t" << var->GetName()<<std::endl;
+    }
+    Initial_value[var->GetName()] = var->getVal();
+  }
+  std::cout<<std::endl;
+  std::cout << "============= Variable variables ==============\n" << std::endl ;
+  var=0;
+  vars = sim->getVariables();
+  it = vars->createIterator();
+  nv = 0; 
+  while((var = (RooRealVar*)it->Next())) {
+    if (!var->isConstant()){
+      nv++;
+      std::cout << "Variable " << nv << "\t -> Initial Value: " << var->getVal();
+      std::cout<< "\t" << var->GetName()<<std::endl;
+    }
+    Initial_value[var->GetName()] = var->getVal();
+  }
+  std::cout<<std::endl;
+
+  if(par->debug) std::cout<<"Running: DsPhiFitting::SetLimits() --> Doing fitTo" << std::endl;
+
+  RooFitResult* result = 0;
+
+  if(withConstraints){
+    result = modelc->fitTo( *data
+                           ,RooFit::Save()
+                           //,RooFit::Minos(par->minos)
+                           ,RooFit::PrintLevel(par->batch?-1:1)
+                           //,RooFit::Optimize(false)
+                           ,RooFit::Timer(true) 
+                           ,RooFit::Constrain(RooArgSet(*f_param))
+                           );
+  } else {
+    //result = sim->fitTo(   *data
+    //                       ,RooFit::Save()
+    //                       //,RooFit::Minos(par->minos)
+    //                       ,RooFit::PrintLevel(par->batch?-1:1)
+    //                       //,RooFit::Optimize(false)
+    //                       ,RooFit::Timer(true) 
+    //                       );
+    result = sim->fitTo( *data
+                     ,RooFit::Save()
+                     ,RooFit::Minos(par->minos)
+                     ,RooFit::PrintLevel(par->batch?-1:1)
+                     ,RooFit::Optimize(false)
+                     ,RooFit::Timer(true) 
+                     //,RooFit::Contrain("Br_syst")
+                     //,RooFit::ExternalConstraints(fconstext)
+                     );//,RooFit::Range("fitRange"),RooFit::SplitRange(kTRUE));
+  }
+
+  result->Print("v");
+
+  double SYS = 0.788;
+  
+  if(par->debug) std::cout<<"Running: DsPhiFitting::SetLimits() --> Final Branching fraction: " << branching_fraction_all->getVal()<< std::endl;
+  
+  if(false){
+    TCanvas * c2 = new TCanvas("nll","",700,600); 
+    
+    if(par->debug) std::cout<<"Running: DsPhiFitting::SetLimits() --> CreateNLL" << std::endl;
+    RooAbsReal* nll = sim->createNLL(*data);
+    //nll->Print("v");
+
+    if(par->debug) std::cout<<"Running: DsPhiFitting::SetLimits() --> Minimize likelihood" << std::endl;
+    RooMinuit m(*nll) ;
+    m.migrad() ;
+    //RooMinuit(*nll).migrad() ;
+    RooFitResult* r_temp = m.save();
+    double minNll = r_temp->minNll();
+    std::cout<<"MinNll: " << minNll <<std::endl;
+    if(par->debug) std::cout<<"Running: DsPhiFitting::SetLimits() --> Final Branching fraction: " << branching_fraction_all->getVal()<< std::endl;
+
+    if(par->debug) std::cout<<"Running: DsPhiFitting::SetLimits() --> CreateProfile" << std::endl;
+    RooAbsReal* pll = nll->createProfile(*branching_fraction_all) ;
+
+    //pll->Print("v");
+
+    
+    // ----------- Plot nLL --------------
+
+    c2->Divide(2,1);
+    c2->cd(1);
+    if(par->debug) std::cout<<"Running: DsPhiFitting::SetLimits() --> Plot nll" << std::endl;
+    RooPlot* frame = ((RooRealVar*)branching_fraction_all)->frame(RooFit::Range(-10.00,100.0)) ;
+    nll->plotOn(frame,RooFit::ShiftToZero()) ; //,RooFit::ShiftToZero()
+    //frame->Draw();
+    //c2->cd(2);
+    double factor = 100.0;
+
+    // Make nLL into histogram
+    TH1* nll_hist = nll->createHistogram("Branching_fraction",110*factor);
+    TH1* likelihood_hist = (TH1*)nll_hist->Clone("likelihood_hist");
+    int nbinsx = nll_hist->GetXaxis()->GetNbins();
+
+    
+    // Make nll into Likelihood
+    for(int i = 0; i<nbinsx+2; i++){
+      std::cout << i << " Bin content: " << nll_hist->GetBinContent(i) << "\t"<< factor*nll_hist->GetBinContent(i)-minNll << "\t"<< exp( -(factor*nll_hist->GetBinContent(i)-minNll) ) << std::endl;
+      
+      if(factor*nll_hist->GetBinContent(i)-minNll > -10.0 ){ //&& likelihood_hist->GetBinLowEdge(i)>0.0
+        likelihood_hist->SetBinContent(i, exp( -(factor*nll_hist->GetBinContent(i)-minNll) ) );
+      } else {
+        likelihood_hist->SetBinContent(i, 0.0);
+      }
+
+    }
+    
+    // Convolve Likelihood with SYS
+    if(par->debug) std::cout<<"Running: DsPhiFitting::SetLimits() --> Convolve nll" << std::endl;
+    
+    TH1* likelihood_conv = (TH1*)likelihood_hist->Clone("likelihood_conv");
+    for(int i = 0; i<nbinsx+2; i++){
+      double sum=0;
+      for(int j = 0; j<nbinsx+2; j++){  
+        double center  = likelihood_hist->GetBinContent(j)*TMath::Gaus(likelihood_hist->GetBinCenter(i)- likelihood_hist->GetBinCenter(j),0,SYS,kTRUE);
+        sum = sum + center/factor;
+      }
+      likelihood_conv->SetBinContent(i,sum);
+    }
+
+    nll_hist->Draw();
+    c2->cd(2);
+    likelihood_conv->GetXaxis()->SetRangeUser(-1.0,20.0);
+    likelihood_conv->SetLineColor(kRed);
+    
+    likelihood_conv->Draw();
+    likelihood_hist->Draw("same");
+
+    c2->SaveAs(Form("results/limits/nLL_%s.pdf",  branching_fraction_all->GetName()  ));
+
+    
+    // Make histograms that are zero before 0.0
+    // Make cumuative density functions 
+    if(par->debug) std::cout<<"Running: DsPhiFitting::SetLimits() --> Make CDFs" << std::endl;
+
+ 
+    TCanvas * c_cdf = new TCanvas("cdf","",700,600);
+    c_cdf->Divide(2,1);
+    c_cdf->cd(1);
+    TH1* likelihood_conv_zero = (TH1*)likelihood_conv->Clone("likelihood_conv_zero");
+    TH1* likelihood_hist_zero = (TH1*)likelihood_hist->Clone("likelihood_hist_zero");
+    
+    likelihood_conv_zero->GetXaxis()->SetRangeUser(-0.0,10.0);
+    likelihood_hist_zero->GetXaxis()->SetRangeUser(-0.0,10.0);
+    likelihood_conv_zero->SetLineColor(kRed);
+    
+    likelihood_hist_zero->Draw("same");
+    likelihood_conv_zero->Draw("same");
+
+
+    for(int i = 0; i<nbinsx+2; i++){   
+      if(likelihood_hist_zero->GetBinLowEdge(i)<0.0 || i == nbinsx+1){
+        likelihood_hist_zero->SetBinContent(i, 0.0);
+      }      
+      if(likelihood_conv_zero->GetBinLowEdge(i)<0.0 || i == nbinsx+1){
+        likelihood_conv_zero->SetBinContent(i, 0.0);
+      }
+    }
+    c_cdf->cd(2);
+    likelihood_hist_zero->Scale(1.0/likelihood_hist_zero->Integral());
+    likelihood_conv_zero->Scale(1.0/likelihood_conv_zero->Integral());
+
+    TH1* likelihood_conv_zero_c = likelihood_conv_zero->GetCumulative();
+    TH1* likelihood_hist_zero_c = likelihood_hist_zero->GetCumulative();
+    
+    likelihood_conv_zero_c->GetXaxis()->SetRangeUser(-1.0,10.0);
+    likelihood_conv_zero_c->SetLineColor(kRed);
+    
+    likelihood_conv_zero_c->Draw();
+    likelihood_hist_zero_c->Draw("same");
+    
+    TLine *line_95 = new TLine (-1.0, 0.95, 10.0,0.95);
+    line_95->Draw();
+
+    TLine *line_90 = new TLine (-1.0, 0.90, 10.0,0.90);
+    line_90->Draw();
+
+    c_cdf->SaveAs(Form("results/limits/culumlative_nll_%s.pdf",  branching_fraction_all->GetName()  ));
+
+    double limit_95_upper = 0.0;
+    double limit_95_lower = 0.0;
+    bool limit_95_found   = false;
+
+    double limit_90_upper = 0.0;
+    double limit_90_lower = 0.0;
+    bool limit_90_found   = false;
+    
+    double limit_sys_95_upper = 0.0;
+    double limit_sys_95_lower = 0.0;
+    bool limit_sys_95_found   = false;
+
+    double limit_sys_90_upper = 0.0;
+    double limit_sys_90_lower = 0.0;
+    bool limit_sys_90_found   = false;
+
+
+
+    for(int i = 0; i<nbinsx+2; i++){   
+      if(likelihood_hist_zero_c->GetBinContent(i) >0.95 && !limit_95_found){
+        limit_95_upper = likelihood_hist_zero_c->GetBinCenter(i);
+        limit_95_lower = likelihood_hist_zero_c->GetBinCenter(i-1);
+        limit_95_found = true;
+      }
+      if(likelihood_hist_zero_c->GetBinContent(i) >0.90 && !limit_90_found){
+        limit_90_upper = likelihood_hist_zero_c->GetBinCenter(i);
+        limit_90_lower = likelihood_hist_zero_c->GetBinCenter(i-1);
+        limit_90_found = true;
+      }      
+      if(likelihood_conv_zero_c->GetBinContent(i) >0.95 && !limit_sys_95_found){
+        limit_sys_95_upper = likelihood_conv_zero_c->GetBinCenter(i);
+        limit_sys_95_lower = likelihood_conv_zero_c->GetBinCenter(i-1);
+        limit_sys_95_found = true;
+      }
+      if(likelihood_conv_zero_c->GetBinContent(i) >0.90 && !limit_sys_90_found){
+        limit_sys_90_upper = likelihood_conv_zero_c->GetBinCenter(i);
+        limit_sys_90_lower = likelihood_conv_zero_c->GetBinCenter(i-1);
+        limit_sys_90_found = true;
+      }
+    }
+
+    std::cout << "Limit 0.95 hist : " << limit_95_lower     << ", " << limit_95_upper     <<std::endl;
+    std::cout << "Limit 0.95 conv : " << limit_sys_95_lower << ", " << limit_sys_95_upper <<std::endl;
+    std::cout << "Limit 0.90 hist : " << limit_90_lower     << ", " << limit_90_upper     <<std::endl;
+    std::cout << "Limit 0.90 conv : " << limit_sys_90_lower << ", " << limit_sys_90_upper <<std::endl;
+    
+
+    // --------- Plot pLL --------------
+    
+    if(par->debug) std::cout<<"Running: DsPhiFitting::SetLimits() --> Doing pll" << std::endl;
+    TCanvas * c3 = new TCanvas("pll","",700,600); 
+    c3->Divide(2,1);
+    c3->cd(1);
+    RooPlot* frame2 = ((RooRealVar*)branching_fraction_all)->frame(RooFit::Range(0.00,15.0)) ; 
+    nll->plotOn(frame2,RooFit::ShiftToZero(),RooFit::LineColor(kBlue)) ; //,
+    
+    if(par->debug) std::cout<<"Running: DsPhiFitting::SetLimits() --> plot pll" << std::endl;
+    pll->plotOn(frame2,RooFit::LineColor(kRed),RooFit::ShiftToZero()) ; //,
+    frame2->Draw();
+    
+    c3->cd(2);
+    if(par->debug) std::cout<<"Running: DsPhiFitting::SetLimits() --> Make pll histogram" << std::endl;
+
+    TH1* pll_hist         = pll->createHistogram("Branching_fraction",110*factor);
+    TH1* plikelihood_hist = (TH1*)pll_hist->Clone("plikelihood_hist");
+
+
+    int pbinsx = pll_hist->GetXaxis()->GetNbins();
+    
+    for(int i = 0; i<pbinsx+2; i++){
+      //std::cout << i << " Bin content: " << pll_hist->GetBinContent(i) << factor*pll_hist->GetBinContent(i)-minNll << "\t"<< exp( -(factor*pll_hist->GetBinContent(i)-minNll) ) << std::endl;
+      std::cout << i << " Bin content: " << pll_hist->GetBinContent(i) << "\t"<<  factor*pll_hist->GetBinContent(i) << "\t"<< exp( -(factor*pll_hist->GetBinContent(i)) ) << std::endl;
+      if(factor*pll_hist->GetBinContent(i) > -10.0 ){ //&& plikelihood_hist->GetBinLowEdge(i)>0.0
+        plikelihood_hist->SetBinContent(i, exp( -(factor*pll_hist->GetBinContent(i)) ) );
+      } else {
+        plikelihood_hist->SetBinContent(i, 0.0);
+      }
+
+    }
+
+    if(par->debug) std::cout<<"Running: DsPhiFitting::SetLimits() --> Convolve pll" << std::endl;
+    
+    TH1* plikelihood_conv = (TH1*)plikelihood_hist->Clone("plikelihood_conv");
+
+
+    for(int i = 0; i<pbinsx+2; i++){
+      double sum=0;
+
+      for(int j = 0; j<pbinsx+2; j++){  
+        double center  = plikelihood_hist->GetBinContent(j)*TMath::Gaus(plikelihood_hist->GetBinCenter(i)- plikelihood_hist->GetBinCenter(j),0,SYS,kTRUE);
+        sum = sum + center/factor;
+      }
+
+      plikelihood_conv->SetBinContent(i,sum);
+    }
+
+    likelihood_hist->GetXaxis()->SetRangeUser(-1.0,20.0);
+    likelihood_hist->SetLineColor(kBlue);
+    likelihood_hist->Draw();
+    plikelihood_hist->Draw("same");
+
+    c3->SaveAs(Form("results/limits/pLL_%s.pdf",  branching_fraction_all->GetName()  ));
+
+
+    // Make histograms that are zero before 0.0
+    // Make cumuative density functions 
+    if(par->debug) std::cout<<"Running: DsPhiFitting::SetLimits() --> Make CDFs for pll" << std::endl;
+
+ 
+    TCanvas * c_cdf_p = new TCanvas("cdf_p","",700,600);
+    c_cdf_p->Divide(2,1);
+    c_cdf_p->cd(1);
+    TH1* plikelihood_conv_zero = (TH1*)plikelihood_conv->Clone("plikelihood_conv_zero");
+    TH1* plikelihood_hist_zero = (TH1*)plikelihood_hist->Clone("plikelihood_hist_zero");
+    
+    plikelihood_conv_zero->GetXaxis()->SetRangeUser(-0.0,10.0);
+    plikelihood_conv_zero->SetLineColor(kRed);
+    
+    plikelihood_conv_zero->Draw();
+    plikelihood_hist_zero->Draw("same");
+
+    for(int i = 0; i<pbinsx+2; i++){   
+      if(plikelihood_hist_zero->GetBinLowEdge(i)<0.0 || i == pbinsx+1){
+        plikelihood_hist_zero->SetBinContent(i, 0.0);
+      }      
+      if(plikelihood_conv_zero->GetBinLowEdge(i)<0.0 || i == pbinsx+1){
+        plikelihood_conv_zero->SetBinContent(i, 0.0);
+      }
+    }
+    c_cdf_p->cd(2);
+    plikelihood_hist_zero->Scale(1.0/plikelihood_hist_zero->Integral());
+    plikelihood_conv_zero->Scale(1.0/plikelihood_conv_zero->Integral());
+
+    TH1* plikelihood_conv_zero_c = plikelihood_conv_zero->GetCumulative();
+    TH1* plikelihood_hist_zero_c = plikelihood_hist_zero->GetCumulative();
+    
+    plikelihood_conv_zero_c->GetXaxis()->SetRangeUser(-1.0,10.0);
+    plikelihood_hist_zero_c->GetXaxis()->SetRangeUser(-1.0,10.0);
+    plikelihood_conv_zero_c->SetLineColor(kRed);
+    
+    plikelihood_hist_zero_c->Draw();
+    plikelihood_conv_zero_c->Draw("same");
+
+    
+    //TLine *line_95 = new TLine (-1.0, 0.95, 10.0,0.95);
+    line_95->Draw();
+
+    //TLine *line_90 = new TLine (-1.0, 0.90, 10.0,0.90);
+    line_90->Draw();
+
+    c_cdf_p->SaveAs(Form("results/limits/culumlative_pll_%s.pdf",  branching_fraction_all->GetName()  ));
+
+    double plimit_95_upper = 0.0;
+    double plimit_95_lower = 0.0;
+    bool   plimit_95_found = false;
+
+    double plimit_90_upper = 0.0;
+    double plimit_90_lower = 0.0;
+    bool   plimit_90_found = false;
+    
+    double plimit_sys_95_upper = 0.0;
+    double plimit_sys_95_lower = 0.0;
+    bool   plimit_sys_95_found = false;
+
+    double plimit_sys_90_upper = 0.0;
+    double plimit_sys_90_lower = 0.0;
+    bool   plimit_sys_90_found = false;
+
+
+
+    for(int i = 0; i<nbinsx+2; i++){   
+      if(plikelihood_hist_zero_c->GetBinContent(i) >0.95 && !plimit_95_found){
+        plimit_95_upper = plikelihood_hist_zero_c->GetBinCenter(i);
+        plimit_95_lower = plikelihood_hist_zero_c->GetBinCenter(i-1);
+        plimit_95_found = true;
+      }
+      if(plikelihood_hist_zero_c->GetBinContent(i) >0.90 && !plimit_90_found){
+        plimit_90_upper = plikelihood_hist_zero_c->GetBinCenter(i);
+        plimit_90_lower = plikelihood_hist_zero_c->GetBinCenter(i-1);
+        plimit_90_found = true;
+      }      
+      if(plikelihood_conv_zero_c->GetBinContent(i) >0.95 && !plimit_sys_95_found){
+        plimit_sys_95_upper = plikelihood_conv_zero_c->GetBinCenter(i);
+        plimit_sys_95_lower = plikelihood_conv_zero_c->GetBinCenter(i-1);
+        plimit_sys_95_found = true;
+      }
+      if(plikelihood_conv_zero_c->GetBinContent(i) >0.90 && !plimit_sys_90_found){
+        plimit_sys_90_upper = plikelihood_conv_zero_c->GetBinCenter(i);
+        plimit_sys_90_lower = plikelihood_conv_zero_c->GetBinCenter(i-1);
+        plimit_sys_90_found = true;
+      }
+    }
+
+    std::cout << "Limit 0.95 hist : " << plimit_95_lower     << ", " << plimit_95_upper     <<std::endl;
+    std::cout << "Limit 0.95 conv : " << plimit_sys_95_lower << ", " << plimit_sys_95_upper <<std::endl;
+    std::cout << "Limit 0.90 hist : " << plimit_90_lower     << ", " << plimit_90_upper     <<std::endl;
+    std::cout << "Limit 0.90 conv : " << plimit_sys_90_lower << ", " << plimit_sys_90_upper <<std::endl;
+    
+
+
+
+
+
+
+    /*
+    RooFormulaVar* likelihood  = new RooFormulaVar("likelihood","",Form("exp(-(@0-%f))",minNll),RooArgList(*nll));
+    RooFormulaVar* plikelihood = new RooFormulaVar("likelihood","",Form("exp(-(@0-%f))",minNll),RooArgList(*pll));
+
+    // --------- Plot Likelihood --------------
+    if(par->debug) std::cout<<"Running: DsPhiFitting::SetLimits() --> Plot Likelihood" << std::endl;
+    TCanvas * c4 = new TCanvas("Likelihood","",700,600); 
+    RooPlot* frame3 = ((RooRealVar*)branching_fraction_all)->frame(RooFit::Range(0.00,15.0)) ;
+    likelihood->plotOn(frame3) ; //,RooFit::ShiftToZero()
+    frame3->Draw();
+    c4->SaveAs(Form("results/limits/likelihood_%s.pdf",  branching_fraction_all->GetName()  ));
+
+    // --------- Plot pLL --------------
+    if(par->debug) std::cout<<"Running: DsPhiFitting::SetLimits() --> Plot pLikelihood" << std::endl;
+    TCanvas * c5 = new TCanvas("pLikelihood","",700,600); 
+    RooPlot* frame4 = ((RooRealVar*)branching_fraction_all)->frame(RooFit::Range(0.00,15.0)) ; 
+    likelihood->plotOn(frame4) ;
+    plikelihood->plotOn(frame4,RooFit::LineColor(kRed)) ; 
+    frame4->Draw();
+    c5->SaveAs(Form("results/limits/plikelihood_%s.pdf",  branching_fraction_all->GetName()  ));
+
+    RooAbsReal* integral  = likelihood->createRunningIntegral(*branching_fraction_all,RooFit::Range(0.00,15.0)) ;
+    RooAbsReal* integral2 = plikelihood->createRunningIntegral(*branching_fraction_all,RooFit::Range(0.00,15.0)) ;
+    //RooAbsReal* integral2 = likelihood->createScanRI(RooArgSet(*branching_fraction_all),RooArgSet(),100,2);
+
+    // --------- Plot int --------------
+    if(par->debug) std::cout<<"Running: DsPhiFitting::SetLimits() --> Plot int" << std::endl;
+    TCanvas * c6 = new TCanvas("int","",700,600); 
+    RooPlot* frame5 = ((RooRealVar*)branching_fraction_all)->frame(RooFit::Range(0.00,15.0)) ; 
+    integral->plotOn(frame5) ;
+    integral2->plotOn(frame5,RooFit::LineColor(kRed)) ; 
+    frame5->Draw();
+    c6->SaveAs(Form("results/limits/integral_%s.pdf",  branching_fraction_all->GetName()  ));
+
+    */
+  }
+
+
+
+  if(par->debug) std::cout<<"Running: DsPhiFitting::SetLimits() --> Making workspace and modelConfig " << std::endl;
+  RooWorkspace w("w");
+  RooStats::ModelConfig mc("ModelConfig",&w);
+  
+  if(par->debug) std::cout<<"Running: DsPhiFitting::SetLimits() --> Setting ranges " << std::endl;
+  //mB.setRange("range_fc",mB.getMin(),mB.getMax());
+  //sim->setNormRange("range_fc");
+  mc.SetObservables(RooArgSet (mB,*cat));
+  
+  if(par->debug) std::cout<<"Running: DsPhiFitting::SetLimits() --> Importing data and PDF " << std::endl;
+  
+  w.import(*data);  
+  
+  if(withConstraints){
+    mc.SetPdf(*modelc);
+  }else {
+    mc.SetPdf(*sim);
+  }
+
+  mc.SetParametersOfInterest(RooArgSet(*branching_fraction_all));
+  
+  if(par->debug) std::cout<<"Running: DsPhiFitting::SetLimits() --> Setting nuisance parameters " << std::endl;
+  // define set of nuisance parameters - everything else in the fit bar the signal parameter
+
+  std::string nuisance_params = "DsKK_to_DsD0_Ratio,Dsa1_to_DsstPhi_fraction,Fraction_DsstD0_Helbin1,Fraction_DsstD0_Helbin2,Ratio_DD_to_Dsa1,Ratio_DsstDst0_to_Lowmass,cat,frac_Dsa1_DsstKKst,global_comb_slope,global_csi,global_mean,global_shift,low_mass_total_DsD0_Ds2KKPi_both_both_DsBDTbin1_PhiBDTbin1_both_both,low_mass_total_DsD0_Ds2KPiPi_both_both_DsBDTbin1_PhiBDTbin1_both_both,low_mass_total_DsD0_Ds2PhiPi_both_both_DsBDTbin1_PhiBDTbin1_both_both,low_mass_total_DsD0_Ds2PiPiPi_both_both_DsBDTbin1_PhiBDTbin1_both_both,low_mass_total_DsPhi_Ds2KKPi_both_both_DsBDTbin1_PhiBDTbin1_both_both,low_mass_total_DsPhi_Ds2KPiPi_both_both_DsBDTbin1_PhiBDTbin1_both_both,low_mass_total_DsPhi_Ds2PhiPi_both_both_DsBDTbin1_PhiBDTbin1_both_both,low_mass_total_DsPhi_Ds2PiPiPi_both_both_DsBDTbin1_PhiBDTbin1_both_both,sigma_DsD0_Ds2KKPi,sigma_DsD0_Ds2KPiPi,sigma_DsD0_Ds2PhiPi,sigma_DsD0_Ds2PiPiPi,splitHel_DsD0_PR_peak_fraction,splitHel_DsD0_peak_fraction,yield_comb_DsD0_Ds2KKPi_both_Helbin1_DsBDTbin1_PhiBDTbin1_both_both,yield_comb_DsD0_Ds2KKPi_both_Helbin2_DsBDTbin1_PhiBDTbin1_both_both,yield_comb_DsD0_Ds2KPiPi_both_Helbin1_DsBDTbin1_PhiBDTbin1_both_both,yield_comb_DsD0_Ds2KPiPi_both_Helbin2_DsBDTbin1_PhiBDTbin1_both_both,yield_comb_DsD0_Ds2PhiPi_both_Helbin1_DsBDTbin1_PhiBDTbin1_both_both,yield_comb_DsD0_Ds2PhiPi_both_Helbin2_DsBDTbin1_PhiBDTbin1_both_both,yield_comb_DsD0_Ds2PiPiPi_both_Helbin1_DsBDTbin1_PhiBDTbin1_both_both,yield_comb_DsD0_Ds2PiPiPi_both_Helbin2_DsBDTbin1_PhiBDTbin1_both_both,yield_comb_DsPhiSide_Ds2KKPi_both_Helbin1_DsBDTbin1_PhiBDTbin1_both_both,yield_comb_DsPhiSide_Ds2KKPi_both_Helbin2_DsBDTbin1_PhiBDTbin1_both_both,yield_comb_DsPhiSide_Ds2KPiPi_both_Helbin1_DsBDTbin1_PhiBDTbin1_both_both,yield_comb_DsPhiSide_Ds2KPiPi_both_Helbin2_DsBDTbin1_PhiBDTbin1_both_both,yield_comb_DsPhiSide_Ds2PhiPi_both_Helbin1_DsBDTbin1_PhiBDTbin1_both_both,yield_comb_DsPhiSide_Ds2PhiPi_both_Helbin2_DsBDTbin1_PhiBDTbin1_both_both,yield_comb_DsPhiSide_Ds2PiPiPi_both_Helbin1_DsBDTbin1_PhiBDTbin1_both_both,yield_comb_DsPhiSide_Ds2PiPiPi_both_Helbin2_DsBDTbin1_PhiBDTbin1_both_both,yield_comb_DsPhi_Ds2KKPi_both_Helbin1_DsBDTbin1_PhiBDTbin1_both_both,yield_comb_DsPhi_Ds2KKPi_both_Helbin2_DsBDTbin1_PhiBDTbin1_both_both,yield_comb_DsPhi_Ds2KPiPi_both_Helbin1_DsBDTbin1_PhiBDTbin1_both_both,yield_comb_DsPhi_Ds2KPiPi_both_Helbin2_DsBDTbin1_PhiBDTbin1_both_both,yield_comb_DsPhi_Ds2PhiPi_both_Helbin1_DsBDTbin1_PhiBDTbin1_both_both,yield_comb_DsPhi_Ds2PhiPi_both_Helbin2_DsBDTbin1_PhiBDTbin1_both_both,yield_comb_DsPhi_Ds2PiPiPi_both_Helbin1_DsBDTbin1_PhiBDTbin1_both_both,yield_comb_DsPhi_Ds2PiPiPi_both_Helbin2_DsBDTbin1_PhiBDTbin1_both_both,yield_peak_DsD0_Ds2KKPi_both_both_DsBDTbin1_PhiBDTbin1_both_both,yield_peak_DsD0_Ds2KPiPi_both_both_DsBDTbin1_PhiBDTbin1_both_both,yield_peak_DsD0_Ds2PhiPi_both_both_DsBDTbin1_PhiBDTbin1_both_both,yield_peak_DsD0_Ds2PiPiPi_both_both_DsBDTbin1_PhiBDTbin1_both_both";
+  //std::string nuisance_params = "";
+
+  //nuisance_params = nuisance_params + ",yield_peak_DsD0_Ds2KKPi_both_both_DsBDTbin1_PhiBDTbin1_both_both";
+  //nuisance_params = nuisance_params + ",yield_peak_DsD0_Ds2KPiPi_both_both_DsBDTbin1_PhiBDTbin1_both_both";
+  //nuisance_params = nuisance_params + ",yield_peak_DsD0_Ds2PhiPi_both_both_DsBDTbin1_PhiBDTbin1_both_both";
+  //nuisance_params = nuisance_params + ",yield_peak_DsD0_Ds2PiPiPi_both_both_DsBDTbin1_PhiBDTbin1_both_both";
+
+  if(withConstraints){
+    if(nuisance_params==""){
+      nuisance_params = "Br_syst";
+    }else{
+      nuisance_params = nuisance_params + ",Br_syst";
+    }
+
+  }
+
+  if(par->debug) std::cout<<"Running: DsPhiFitting::SetLimits() --> " << nuisance_params << std::endl;
+
+  w.defineSet("nuisParams",nuisance_params.c_str());
+  mc.SetNuisanceParameters(*w.set("nuisParams"));
+
+  if(withConstraints){
+  //std::string global_params = "Br_syst_m";
+    std::string global_params = "Br_syst_m";
+    w.defineSet("globalParams",global_params.c_str());
+    mc.SetGlobalObservables(*w.set("globalParams"));
+    mc.SetSnapshot(*branching_fraction_all);
+    mc.SetPriorPdf(*Br_syst_constrained);
+  }
+
+  if(par->debug) std::cout<<"Running: DsPhiFitting::SetLimits() --> Print ModelConfig " << std::endl;
+
+  mc.Print();
+  // Test
+  //std::string constraint_params = "constrained_var";
+  //w.defineSet("constParams",constraint_params.c_str());
+  //mc.SetConstraintParameters(*w.set("constParams"));
+
+
+  if(par->debug) std::cout<<"Running: DsPhiFitting::SetLimits() --> import model in the workspace " << std::endl;
+  // import model in the workspace 
+  w.import(mc);
+
+  RooAbsData *wdata = 0;
+  //wdata = w.data("combData");
+  wdata = (RooAbsData*)w.data("reducedData");
+
+
+  wdata->Print();
+  ///////////////////
+  //// CLs method ///
+  ///////////////////
+  if(par->debug) std::cout<<"Running: DsPhiFitting::SetLimits() --> ModelConfig " << std::endl;
+  
+  //Make a signal and background model which is an instance of the fit PDF taken from the modelConfig
+  RooStats::ModelConfig *sbModel = (RooStats::ModelConfig*)w.obj("ModelConfig");
+  
+  //Parameter of interest
+  RooRealVar *poi = (RooRealVar*)sbModel->GetParametersOfInterest()->first();
+  sbModel->SetSnapshot(*poi);
+  
+  //Background only model
+  RooStats::ModelConfig *bModel = (RooStats::ModelConfig*)sbModel->Clone();
+  //Set it's name to be different, with poi_0 i.e. signal is zero
+  bModel->SetName(TString(sbModel->GetName())+TString("_with_poi_0"));
+  //Set the signal yield to 0
+  poi->setVal(0);
+  bModel->SetSnapshot(*poi);
+ 
+
+  // Setup Method 
+  RooStats::HypoTestCalculatorGeneric* hc;
+  std::string method = "F";
+
+  if (method == "F"){
+    if(par->debug) std::cout<<"Running: DsPhiFitting::SetLimits() --> FrequentistCalculator " << std::endl;
+    hc = new RooStats::FrequentistCalculator(*wdata, *bModel, *sbModel);
+    ((RooStats::FrequentistCalculator*)hc)->SetToys(1000,1000);  
+  
+  } else if(method == "H"){
+    if(par->debug) std::cout<<"Running: DsPhiFitting::SetLimits() --> HybridCalculator " << std::endl;
+    hc = new RooStats::HybridCalculator(*wdata, *bModel, *sbModel);
+    ((RooStats::HybridCalculator*)hc)->SetToys(1000,1000);  
+
+  } else {
+  if(par->debug) std::cout<<"Running: DsPhiFitting::SetLimits() --> AsymptoticCalculator " << std::endl;
+    hc = new RooStats::AsymptoticCalculator(*wdata, *bModel, *sbModel);
+    ((RooStats::AsymptoticCalculator*)hc)->SetOneSided(true);  // for one-side tests (limits)
+    RooStats::AsymptoticCalculator::SetPrintLevel(-1); 
+  }
+
+
+  if(par->debug) std::cout<<"Running: DsPhiFitting::SetLimits() --> Make HypoTestInverter " << std::endl;
+
+  RooStats::HypoTestInverter calc(*hc);
+  calc.SetConfidenceLevel(0.90);
+  bool useCLs =true;
+  calc.UseCLs(useCLs);
+  calc.SetVerbose(false);
+  
+  
+  
+  if(par->debug) std::cout<<"Running: DsPhiFitting::SetLimits() --> ProfileLikelihoodTestStat " << std::endl;
+  // profile likelihood test statistics 
+  RooStats::ProfileLikelihoodTestStat profll(*sbModel->GetPdf());
+  // for CLs (bounded intervals) use one-sided profile likelihood
+  if (useCLs) profll.SetOneSided(true);
+  
+
+  if(par->debug) std::cout<<"Running: DsPhiFitting::SetLimits() --> ToyMCSampler " << std::endl;
+
+  // configure ToyMC Samler (needed only for frequentit calculator)
+  RooStats::ToyMCSampler *toymcs = (RooStats::ToyMCSampler*)calc.GetHypoTestCalculator()->GetTestStatSampler();
+  // set the test statistic to use 
+  toymcs->SetTestStatistic(&profll);
+
+  // if the pdf is not extended (e.g. in the Poisson model) 
+  // we need to set the number of events
+  if (!sbModel->GetPdf()->canBeExtended()){ 
+    if(par->debug) std::cout<<"Running: DsPhiFitting::SetLimits() --> Setting SetNEventsPerToy to 1 " << std::endl; 
+    toymcs->SetNEventsPerToy(1);
+  }
+
+
+  int npoints = 10;  // number of points to scan
+  // min and max (better to choose smaller intervals)
+  double poimin =  0.0;   
+  double poimax = 10.0; 
+
+  //RooMsgService::instance().setGlobalKillBelow(RooFit::INFO);
+
+  std::cout << "Doing a fixed scan  in interval : " << poimin << " , " << poimax << std::endl;
+  calc.SetFixedScan(npoints,poimin,poimax);
+
+  RooStats::HypoTestInverterResult * r = (RooStats::HypoTestInverterResult*)calc.GetInterval();
+
+  double upperLimit = r->UpperLimit();
+
+  std::cout << "The computed upper limit is: " << upperLimit << std::endl;
+
+  // compute expected limit
+  std::cout << "Expected upper limits, using the B (alternate) model : " << std::endl;
+  std::cout << " expected limit (median) " << r->GetExpectedUpperLimit(0) << std::endl;
+  std::cout << " expected limit (-1 sig) " << r->GetExpectedUpperLimit(-1) << std::endl;
+  std::cout << " expected limit (+1 sig) " << r->GetExpectedUpperLimit(1) << std::endl;
+
+
+  // plot now the result of the scan 
+
+  RooStats::HypoTestInverterPlot *plot = new RooStats::HypoTestInverterPlot("HTI_Result_Plot","",r);
+  
+  gStyle->SetPadTopMargin(0.1);
+  gStyle->SetPadBottomMargin(0.18);
+  gStyle->SetPadLeftMargin(0.13);
+  gStyle->SetPadRightMargin(0.13);
+  gStyle->SetNdivisions(505,"XYZ");
+  gStyle->SetStatFont(132);
+  gStyle->SetStatFontSize(0.08);
+  gStyle->SetTitleFont(132,"XYZ");
+  gStyle->SetLabelFont(132,"XYZ");
+  gStyle->SetTitleSize(0.077,"XYZ");
+  gStyle->SetLabelSize(0.06,"XYZ");
+  gStyle->SetTitleOffset(1.05,"X");
+  gStyle->SetTitleOffset(0.8,"Y");
+  gStyle->SetMarkerSize(1);
+  gStyle->SetPadTickX(1);
+  gStyle->SetPadTickY(1);
+  
+
+  // plot in a new canvas with style
+  TCanvas * c1 = new TCanvas("HypoTestInverter_Scan","",700,600); 
+  c1->SetLogy(false);
+  
+  
+  TPad *pad = new TPad("pad","",0,0,1,1);
+  pad->cd();
+
+  
+  plot->Draw("2CL");  // plot also CLb and CLs+b 
+  //plot->Draw("OBS");  // plot only observed p-value
+  TPaveLabel* lhcblabel = new TPaveLabel(0.75,0.8,0.8,0.85,"#font[132]{LHCb}","BRNDC");
+  lhcblabel->SetBorderSize(0);
+  lhcblabel->SetFillStyle(0);
+  lhcblabel->SetTextSize(1.4);
+  lhcblabel->SetTextFont(62); 
+  lhcblabel->SetTextAlign(31);
+  lhcblabel->Draw();
+
+  c1->cd();
+  
+  
+  pad->Draw();
+
+      //Edit the plot to remove legend and use correct axis titles
+  TList *list = pad->GetListOfPrimitives();
+  list->ls(); //Use this to figure out the name of the things plotted on the canvas
+  
+
+  //TLegend *l = (TLegend*)list->FindObject("TPave");
+  //l->Delete();
+
+  TGraphErrors *gr1 = (TGraphErrors*)list->FindObject("CLs_observed");
+  gr1->GetXaxis()->SetTitle("#it{B(B^{+}#rightarrow D_{s}^{+}#phi)} #times 10^{-7}");
+  gr1->GetYaxis()->SetTitle("#font[12]{p}-value");
+  gr1->GetYaxis()->SetTitle("CL_{s}");
+
+  TGraphErrors *gr2 = (TGraphErrors*)list->FindObject("CLs+b_observed");
+  gr2->GetXaxis()->SetTitle("#it{B(B^{+}#rightarrow D_{s}^{+}#phi)} #times 10^{-7}");
+  gr2->GetYaxis()->SetTitle("#font[12]{p}-value");
+  gr2->GetYaxis()->SetTitle("CL_{s}");
+
+  TGraphErrors *gr3 = (TGraphErrors*)list->FindObject("CLs_observed");
+  gr3->GetXaxis()->SetTitle("#it{B(B^{+}#rightarrow D_{s}^{+}#phi)} #times 10^{-7}");
+  gr3->GetYaxis()->SetTitle("#font[12]{p}-value");
+  gr3->GetYaxis()->SetTitle("CL_{s}");
+  
+  c1->SaveAs(Form("results/limits/CLS_%s.pdf",  branching_fraction_all->GetName()  ));
+  c1->SaveAs(Form("results/limits/CLS_%s.eps",  branching_fraction_all->GetName()  ));
+  c1->SaveAs(Form("results/limits/CLS_%s.root", branching_fraction_all->GetName()  ));
+  c1->SaveAs(Form("results/limits/CLS_%s.png",  branching_fraction_all->GetName()  ));
+  c1->SaveAs(Form("results/limits/CLS_%s.C",    branching_fraction_all->GetName()  ));  
+
+
+  const int n = r->ArraySize();
+  if (n> 0 &&  r->GetResult(0)->GetNullDistribution() ) { 
+      TCanvas * c2 = new TCanvas("Test Statistic Distributions","",2);
+      if (n > 1) {
+          int ny = TMath::CeilNint( sqrt(n) );
+          int nx = TMath::CeilNint(double(n)/ny);
+          c2->Divide( nx,ny);
+      }
+      for (int i=0; i<n; i++) {
+          if (n > 1) c2->cd(i+1);
+          RooStats::SamplingDistPlot * pl = plot->MakeTestStatPlot(i);
+          pl->SetLogYaxis(true);
+          pl->Draw();
+      }
+  }
+
+
 }
 
 
@@ -2431,7 +3566,7 @@ void DsPhiFitting::RunManyFits()
         simple_plot->SetTitle("");
 
         simple_plot->GetXaxis()->SetTitle("#font[12]{m}(#font[12]{D_{s}D^{0}}) [MeV/#font[12]{c}^{2}] ");
-        simple_plot->GetYaxis()->SetTitle(Form("Events / ( %i MeV/#font[12]{c}^{2} ) ",int(binWidth)));
+        simple_plot->GetYaxis()->SetTitle(Form("Candidates / ( %i MeV/#font[12]{c}^{2} ) ",int(binWidth)));
         simple_plot->GetXaxis()->SetTitleOffset(0.9);
         simple_plot->GetYaxis()->SetTitleOffset(1.0);
         simple_plot->GetXaxis()->SetTitleSize(0.045);
@@ -2446,7 +3581,7 @@ void DsPhiFitting::RunManyFits()
 
         } else {
           result->Print("v");
-          model->PrintResult(); 
+          model->PrintResult(result); 
         }
 
         TFile f(Form("results/manyfits/%s/%s/%s%s_result.root",dsmode.c_str(), mva.c_str(),name_string.c_str(),years.c_str()),"RECREATE");
@@ -2691,7 +3826,7 @@ void DsPhiFitting::RunManyFits()
       simple_plot->SetTitle("");
 
       simple_plot->GetXaxis()->SetTitle("#font[12]{m}(#font[12]{D_{s}D^{0}}) [MeV/#font[12]{c}^{2}] ");
-      simple_plot->GetYaxis()->SetTitle(Form("Events / ( %i MeV/#font[12]{c}^{2} ) ",int(binWidth)));
+      simple_plot->GetYaxis()->SetTitle(Form("Candidates / ( %i MeV/#font[12]{c}^{2} ) ",int(binWidth)));
       simple_plot->GetXaxis()->SetTitleOffset(0.9);
       simple_plot->GetYaxis()->SetTitleOffset(1.0);
       simple_plot->GetXaxis()->SetTitleSize(0.045);
@@ -2703,7 +3838,7 @@ void DsPhiFitting::RunManyFits()
       std::cout <<"\n-------- minNLL = "; std::cout.precision(10); std::cout << result->minNll()<<" covQual = " << result->covQual() << std::endl;
 
       result->Print("v");
-      model->PrintResult();
+      model->PrintResult(result);
 
       TFile f(Form("results/manyfits/%s/%s/%s%s_result.root",dsmode.c_str(), mva.c_str(),name_string.c_str(),years.c_str()),"RECREATE");
       result->Write(); 
@@ -2974,7 +4109,7 @@ void DsPhiFitting::RunEfficiency()
 
       if(par->Bmodes[DsD0])  simple_plot_phi->GetXaxis()->SetTitle("#font[12]{m}(#font[12]{D^{0}}) [MeV/#font[12]{c}^{2}] ");
       if(par->Bmodes[DsPhi]) simple_plot_phi->GetXaxis()->SetTitle("#font[12]{m}(#font[12]{#phi) [MeV/#font[12]{c}^{2}] ");
-      simple_plot_phi->GetYaxis()->SetTitle(Form("Events / ( %i MeV/#font[12]{c}^{2} ) ",int(binWidth)));
+      simple_plot_phi->GetYaxis()->SetTitle(Form("Candidates / ( %i MeV/#font[12]{c}^{2} ) ",int(binWidth)));
       simple_plot_phi->GetXaxis()->SetTitleOffset(0.9);
       simple_plot_phi->GetYaxis()->SetTitleOffset(1.0);
       simple_plot_phi->GetXaxis()->SetTitleSize(0.045);
@@ -3057,7 +4192,7 @@ void DsPhiFitting::RunEfficiency()
       simple_plot_ds->SetTitle("");
 
       if(par->Bmodes[DsD0])  simple_plot_ds->GetXaxis()->SetTitle("#font[12]{m}(#font[12]{D_{s}}) [MeV/#font[12]{c}^{2}] ");
-      simple_plot_ds->GetYaxis()->SetTitle(Form("Events / ( %i MeV/#font[12]{c}^{2} ) ",int(binWidth)));
+      simple_plot_ds->GetYaxis()->SetTitle(Form("Candidates / ( %i MeV/#font[12]{c}^{2} ) ",int(binWidth)));
       simple_plot_ds->GetXaxis()->SetTitleOffset(0.9);
       simple_plot_ds->GetYaxis()->SetTitleOffset(1.0);
       simple_plot_ds->GetXaxis()->SetTitleSize(0.045);
@@ -3119,7 +4254,6 @@ void DsPhiFitting::RunEfficiency()
 void DsPhiFitting::RunManyToys()
 {
   if(par->debug) std::cout<<"Running: DsPhiFitting::RunManyToys()"<<std::endl;
-  RooArgSet* initialPars= model_gen->GetParameters();
   //RooArgSet* fittedPars = model->GetParameters();
   /*
   std::cout<<"Copying the last fitted parameters to the toy generator:"<<std::endl;
@@ -3143,7 +4277,7 @@ void DsPhiFitting::RunManyToys()
   */
 
   // Set Generator values to RooRealVar initial values and write them to a file
-
+  RooArgSet* initialPars= model_gen->GetParameters();
   std::string gen_location=par->toylocation+"/gen_vals";
   TIterator* initialIter= initialPars->createIterator();
   TObject* initialObj; 
@@ -3193,6 +4327,7 @@ void DsPhiFitting::OrderToys(int n)
   if(1==n&&!DB){
     mcstudy->generate(n,nEvtsPerSample,true);
     data=(RooDataSet*)mcstudy->genData(n-1);
+  
   }else{
     // Fit using fit model 
     if(true){
@@ -3232,8 +4367,15 @@ void DsPhiFitting::OrderToys(int n)
 
         std::cout<<"Fitting toy "<< i+1 <<" of "<<n<<"."<<std::endl;
         RooDataSet* mcdata=(RooDataSet*)mcstudy->genData(i);
-        RooFitResult* mcresult = sim->fitTo(*mcdata,RooFit::Save(),RooFit::Minos(par->minos),RooFit::PrintLevel(-1),RooFit::Optimize(false),RooFit::Timer(true));
+        RooFitResult* mcresult = sim->fitTo(*mcdata,
+                                            RooFit::Save(),
+                                            RooFit::Minos(par->minos),
+                                            RooFit::PrintLevel(-1),
+                                            RooFit::Optimize(false),
+                                            RooFit::Timer(true)
+                                            );
         mcresult->Write(Form("toy%i",i));
+
       }
       gDirectory->ls();
       f.Close();
@@ -4073,6 +5215,7 @@ void DsPhiFitting::Sensitivity(){
   gSystem->Exec((std::string("mkdir -p ")+"sensitivityDir").c_str());
   gSystem->Exec((std::string("mkdir -p ")+"sensitivityDir/gen_vals").c_str());
   gSystem->Exec((std::string("mkdir -p ")+"sensitivityDir/text_vals").c_str());
+  gSystem->Exec((std::string("mkdir -p ")+"sensitivityDir/likelihood").c_str());
 
   std::string gen_location="sensitivityDir/gen_vals";
   std::string text_location="sensitivityDir/text_vals";
@@ -4143,11 +5286,88 @@ void DsPhiFitting::Sensitivity(){
 
     if(par->debug) std::cout<<"Running: DsPhiFitting::Sensitivity() ----> Fitting toy "<< i <<" with signal..."<<std::endl;
     RooDataSet* mcdata=(RooDataSet*)mcstudy->genData(i);
-    RooFitResult* mcresult_withSig = sim_withBr->fitTo(*mcdata,RooFit::Save(),RooFit::Minos(par->minos),RooFit::PrintLevel(-1),RooFit::Optimize(false),RooFit::Timer(true));
+    RooFitResult* mcresult_withSig = sim_withBr->fitTo(*mcdata,
+                                                       RooFit::Save(),
+                                                       RooFit::Minos(par->minos),
+                                                       RooFit::PrintLevel(-1),
+                                                       RooFit::Optimize(false),
+                                                       RooFit::Timer(true));
     mcresult_withSig->Write("toy_withSig");
     if(par->debug) std::cout<<"Running: DsPhiFitting::Sensitivity() ----> With Signal: " << mcresult_withSig->minNll()<<std::endl;
     
     if(true){
+      if(par->debug) std::cout<<"Running: DsPhiFitting::Sensitivity() ----> Making likelihood plot..."<<std::endl;
+      
+      RooAbsReal* branching_fraction_all=model->BranchingFraction();
+      RooAbsReal* nll = sim_withBr->createNLL(*mcdata);    
+      double minNll = mcresult_withSig->minNll();
+      std::cout << "Min NLL: " << minNll <<std::endl;
+      double factor = 10.0;
+
+      // Make nLL into histogram
+
+      TH1* nll_hist = nll->createHistogram("Branching_fraction",120*factor);
+      TH1* likelihood_hist = (TH1*)nll_hist->Clone("likelihood_hist");
+      int nbinsx = nll_hist->GetXaxis()->GetNbins();
+
+      // Make nll into Likelihood
+      for(int i = 0; i<nbinsx+2; i++){
+        if(factor*nll_hist->GetBinContent(i)-minNll > -1000.0 ){
+          likelihood_hist->SetBinContent(i, exp( -(factor*nll_hist->GetBinContent(i)-minNll) ) );
+        } else {
+          likelihood_hist->SetBinContent(i, 0.0);
+        }
+        std::cout << i << " Bin content: " << nll_hist->GetBinContent(i) << "\t"<< factor*nll_hist->GetBinContent(i)-minNll << "\t"<< likelihood_hist->GetBinContent(i) << std::endl;
+
+      }
+      //nll->Print("v");
+      TCanvas * c2 = new TCanvas("nll","",700,600); 
+      c2->Divide(2,1);
+      c2->cd(1);
+      RooPlot* frame = ((RooRealVar*)branching_fraction_all)->frame(RooFit::Range(-10.00,100.0)) ;
+
+      nll_hist->Draw();
+      c2->cd(2);
+      likelihood_hist->GetXaxis()->SetRangeUser(-5.0,20.0);
+      likelihood_hist->Draw();
+
+      TAxis *axis = likelihood_hist->GetXaxis();
+        
+      double xmin = -5.0;
+      double xmax = 18.0;
+      int bmin = axis->FindBin(xmin); 
+      int bmax = axis->FindBin(xmax);
+      double integral_tot = likelihood_hist->Integral(bmin,bmax);
+      //integral_tot =  integral_tot  - (likelihood_hist->GetBinContent(bmin)*( xmin-axis->GetBinLowEdge(bmin) ) /axis->GetBinWidth(bmin));
+      //integral_tot =  integral_tot  - (likelihood_hist->GetBinContent(bmax)*(axis->GetBinUpEdge(bmax)-xmax))/axis->GetBinWidth(bmax));
+      std::cout <<"Total integral: " << integral_tot << std::endl;
+      
+      xmin = -5.0;
+      xmax = 1.16;
+      bmin = axis->FindBin(xmin); 
+      bmax = axis->FindBin(xmax);
+      double integral = likelihood_hist->Integral(bmin,bmax);
+      //integral -= likelihood_hist->GetBinContent(bmin)*(xmin-axis->GetBinLowEdge(bmin))/axis->GetBinWidth(bmin);
+      //integral -= likelihood_hist->GetBinContent(bmax)*(axis->GetBinUpEdge(bmax)-xmax))/axis->GetBinWidth(bmax);
+      std::cout <<"Below 1.16 integral: " << integral << std::endl;
+      std::cout <<"Integral Fraction: " << integral/integral_tot << std::endl;
+
+      std::string plotfile="sensitivityDir/likelihood/";
+      plotfile+=std::string(Form("likelihood_%f_%i_%i_.pdf",par->sensitivityBR,secs,i));  
+  
+
+      c2->SaveAs(plotfile.c_str() );
+      
+      std::string text_filename="sensitivityDir/likelihood/";
+      text_filename+=std::string(Form("text_likelihood_%f_%i_%i_.txt",par->sensitivityBR,secs,i));  
+      std::ofstream output_file(text_filename.c_str());
+      output_file << par->sensitivityBR <<":"<< integral <<":"<< integral_tot <<":"<< integral/integral_tot;
+      output_file.close();
+    }
+
+
+
+    if(false){
       if(par->debug) std::cout<<"Running: DsPhiFitting::Sensitivity() ----> Fitting toy "<< i <<" without signal..."<<std::endl;   
       model_gen->SetBrConstant();
       RooFitResult* mcresult_noSig = sim_withBr->fitTo(*mcdata,RooFit::Save(),RooFit::Minos(par->minos),RooFit::PrintLevel(-1),RooFit::Optimize(false),RooFit::Timer(true));

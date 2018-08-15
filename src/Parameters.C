@@ -52,6 +52,9 @@ Parameters::Parameters(  )
   , doMerge(false)
   , doSensitivity(false)
   , sensitivityBR(0.0)
+  , doLikelihood(false)
+  , likelihoodBR(0.0)
+  , SetLimits(false)
   , sensitivityN(0)
   , quickVersion(false)
   , minos(false)
@@ -63,9 +66,12 @@ Parameters::Parameters(  )
   variation[fixedSig_Sigmaratio]=false;
   variation[fixedSig_Sigmafrac]=false;
   variation[fixedSig_NormSigma]=false;
+  variation[fixedSig_NormSigmaRatio]=false;
+  variation[fixedSig_NormYield]=false;
   variation[fixedSig_BinRatios]=false;
   variation[fixedBG_DsD0]=false;
   variation[fixedBG_DsPhi]=false;
+  variation[fixedBG_DKst0]=false;
   variation[fixedBG_Dsa1]=false;
   variation[fixedBG_hel]=false;
   variation[fixedBG_noDsstPhi]=false;
@@ -80,6 +86,7 @@ Parameters::Parameters(  )
   variation[fixedBG_Comb_shape]=false;
   variation[fixedBG_Comb_shape_flat]=false;
   variation[fixedBG_Comb_shape_line]=false;
+  variation[fixedBG_DsKK_fractions]=false;
   variation[draw]=false;
   variation[fixedSig_double]=false;
   variation[doNothing]=false;
@@ -133,6 +140,7 @@ void Parameters::help()
   std::cout << "    -R Fit single branching ratio " << std::endl;
   std::cout << "    -r Fit four seperate branching ratio " << std::endl;
   std::cout << "    -D merge D mode plots " << std::endl;
+  std::cout << "    -I Set Limits on branching fraction " << std::endl;
 
   std::cout << "********************************************************************" << std::endl;
   std::cout << "Typical executions are:" << std::endl;
@@ -202,6 +210,9 @@ int Parameters::readCommandLine(unsigned int narg, char *argv[])
         break;
       case int('D'):
         doMerge=true;
+        break;
+      case int('I'):
+        SetLimits=true;
         break;
       //case int('C'):
       //  manyFits=true;
@@ -317,7 +328,7 @@ int Parameters::readCommandLine(unsigned int narg, char *argv[])
     CommonTools::split(coption, tokens, ":");
     for(unsigned int i=0;i<tokens.size();i++){
       Bmodes[tokens[i]]=true;
-      if(tokens[i]!=DsD0 && tokens[i]!=DsPhi && tokens[i]!=DsPhiSide && tokens[i]!=DD0  && tokens[i]!=DKst0  && tokens[i]!=DKst0Side ){
+      if(tokens[i]!=DsD0 && tokens[i]!=DsPhi && tokens[i]!=DsPhiSide && tokens[i]!=DsPhiSideWide && tokens[i]!=DD0  && tokens[i]!=DKst0  && tokens[i]!=DKst0Side ){
         std::cout << " Don't recognise mode: " << tokens[i] << std::endl;
         OK=false;
       }

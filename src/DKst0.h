@@ -1,5 +1,5 @@
-#ifndef DsPhiFitting_h
-#define DsPhiFitting_h
+#ifndef DKst0Fitting_h
+#define DKst0Fitting_h
 
 #include <string>
 
@@ -10,27 +10,6 @@
 #include "RooDataSet.h"
 #include "RooCategory.h"
 #include "RooWorkspace.h"
-
-#include "RooStats/ModelConfig.h"
-#include "RooStats/FeldmanCousins.h"
-#include "RooStats/ProfileLikelihoodCalculator.h"
-#include "RooStats/ToyMCSampler.h"
-#include "RooStats/PointSetInterval.h"
-#include "RooStats/ConfidenceBelt.h"
-#include "RooStats/LikelihoodIntervalPlot.h"
-#include "RooStats/FrequentistCalculator.h"
-#include "RooStats/HypoTestCalculatorGeneric.h"
-#include "RooStats/HybridCalculator.h"
-#include "RooStats/AsymptoticCalculator.h"
-#include "RooStats/HypoTestInverter.h"
-#include "RooStats/ProfileLikelihoodTestStat.h"
-#include "RooStats/RatioOfProfiledLikelihoodsTestStat.h"
-#include "RooStats/HypoTestInverterPlot.h"
-#include "RooStats/SamplingDistPlot.h"
-#include "RooStats/RooStatsUtils.h"
-
-//using namespace RooStats;
-
 
 #include "Base.h"
 #include "DsPhiModel.h"
@@ -44,10 +23,10 @@ class Parameters;
 class TApplication;
 
 
-class DsPhiFitting : public Base {
+class DKst0Fitting : public Base {
   public :
-  DsPhiFitting(Parameters*,TApplication*);
-  ~DsPhiFitting(){}
+  DKst0Fitting(Parameters*,TApplication*);
+  ~DKst0Fitting(){}
 
   void DefineModel();
   void DefineRooCategories();
@@ -62,8 +41,6 @@ class DsPhiFitting : public Base {
   void PrintDataSet();
 
   void RunFullFit(bool);
-  void SetLimits();
-  void SetLimits2();
   void RunManyFits();
   void RunEfficiency();
   void RunManyToys();
@@ -73,9 +50,6 @@ class DsPhiFitting : public Base {
   void DisplayToys();
   void DisplaySys();
 
-  void Sensitivity();
-  void LikelihoodScan();
-  
 private:
   Parameters* par;
   std::string toys;
@@ -99,11 +73,7 @@ private:
   RooRealVar mDs;
   RooRealVar mPhi;
   //RooRealVar bach_dll;
- 
-  RooRealVar BuIPCHI2;
-  RooRealVar DIPCHI2;
-  RooRealVar BuDTFCHI2;
-
+  
   //Data BDT variables 
   RooRealVar bdtDs;
   RooRealVar bdtgDs;
@@ -187,7 +157,6 @@ private:
   double m_bdtCut;
 
   bool state;
-  bool partialstate;
   
   TNtuple *ntuple;
   float x[20];
@@ -205,7 +174,6 @@ private:
  std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,TPad*> > > > > > > canpad;
  std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::string> > > > > > > > title;
  std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::string> > > > > > > > bin_detail;
- std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::string> > > > > > > > bin_detail2;
  
  
  std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,double> > > > > > > > > fit_results;
