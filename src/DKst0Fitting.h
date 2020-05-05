@@ -1,5 +1,5 @@
-#ifndef DsPhiFitting_h
-#define DsPhiFitting_h
+#ifndef DKst0Fitting_h
+#define DKst0Fitting_h
 
 #include <string>
 
@@ -11,29 +11,8 @@
 #include "RooCategory.h"
 #include "RooWorkspace.h"
 
-#include "RooStats/ModelConfig.h"
-#include "RooStats/FeldmanCousins.h"
-#include "RooStats/ProfileLikelihoodCalculator.h"
-#include "RooStats/ToyMCSampler.h"
-#include "RooStats/PointSetInterval.h"
-#include "RooStats/ConfidenceBelt.h"
-#include "RooStats/LikelihoodIntervalPlot.h"
-#include "RooStats/FrequentistCalculator.h"
-#include "RooStats/HypoTestCalculatorGeneric.h"
-#include "RooStats/HybridCalculator.h"
-#include "RooStats/AsymptoticCalculator.h"
-#include "RooStats/HypoTestInverter.h"
-#include "RooStats/ProfileLikelihoodTestStat.h"
-#include "RooStats/RatioOfProfiledLikelihoodsTestStat.h"
-#include "RooStats/HypoTestInverterPlot.h"
-#include "RooStats/SamplingDistPlot.h"
-#include "RooStats/RooStatsUtils.h"
-
-//using namespace RooStats;
-
-
 #include "Base.h"
-#include "DsPhiModel.h"
+#include "DKst0Model.h"
 #include "PhiModel.h"
 #include "DsModel.h"
 
@@ -44,10 +23,10 @@ class Parameters;
 class TApplication;
 
 
-class DsPhiFitting : public Base {
+class DKst0Fitting : public Base {
   public :
-  DsPhiFitting(Parameters*,TApplication*);
-  ~DsPhiFitting(){}
+  DKst0Fitting(Parameters*,TApplication*);
+  ~DKst0Fitting(){}
 
   void DefineModel();
   void DefineRooCategories();
@@ -62,8 +41,6 @@ class DsPhiFitting : public Base {
   void PrintDataSet();
 
   void RunFullFit(bool);
-  void SetLimits();
-  void SetLimits2();
   void RunManyFits();
   void RunEfficiency();
   void RunManyToys();
@@ -72,17 +49,16 @@ class DsPhiFitting : public Base {
   void OrderToys(int);
   void DisplayToys();
   void DisplaySys();
-
-  void Sensitivity();
-  void LikelihoodScan();
   
+  void Sensitivity();
+
 private:
   Parameters* par;
   std::string toys;
 	
-  DsPhiModel *model;
-  DsPhiModel *model_gen;
-  DsPhiModel *model_novary;
+  DKst0Model *model;
+  DKst0Model *model_gen;
+  DKst0Model *model_novary;
   PhiModel   *model_phi;
   DsModel    *model_ds;
   RooDataSet* data;
@@ -96,24 +72,22 @@ private:
   RooRealVar runNumber;
   RooRealVar mB;
   RooRealVar mD0;
-  RooRealVar mDs;
-  RooRealVar mPhi;
+  RooRealVar mD;
+  RooRealVar mKst0;
   //RooRealVar bach_dll;
- 
   RooRealVar BuIPCHI2;
   RooRealVar DIPCHI2;
-  RooRealVar BuDTFCHI2;
-
+  
   //Data BDT variables 
-  RooRealVar bdtDs;
-  RooRealVar bdtgDs;
-  RooRealVar bdtbDs;
+  RooRealVar bdtD;
+  RooRealVar bdtgD;
+  RooRealVar bdtbD;
   RooRealVar bdtD0;
   RooRealVar bdtgD0;
   RooRealVar bdtbD0;
-  RooRealVar bdtPhi;
-  RooRealVar bdtgPhi;
-  RooRealVar bdtbPhi;
+  RooRealVar bdtKst0;
+  RooRealVar bdtgKst0;
+  RooRealVar bdtbKst0;
   //MC BDT variables
   RooRealVar bdtMC;
   RooRealVar bdtgMC;
@@ -130,7 +104,7 @@ private:
   RooRealVar D_P2_pidk;
 
   RooRealVar helicityD0;
-  RooRealVar helicityPhi;
+  RooRealVar helicityKst0;
   RooRealVar mKK;
   RooRealVar bid;
   RooRealVar L0Hadron_TOS;
@@ -160,6 +134,12 @@ private:
   RooRealVar KPiPi_mPiKPi;
   RooRealVar KPiPi_mPiPiPi;
   RooRealVar KPiPi_mKKPi;
+
+  RooRealVar PiKPi_mKKPi;
+  RooRealVar PiKPi_mPiKK;
+  RooRealVar PiKPi_mKK1;
+  RooRealVar PiKPi_mKK2;
+
   RooRealVar m1245;
   RooRealVar m145;
   RooRealVar m245;
@@ -176,18 +156,15 @@ private:
   RooCategory charge;
   RooCategory bMassRegion; 
   RooCategory helBin;
-  RooCategory DsBDTBin;
-  RooCategory PhiBDTBin;
 
   float m_mD0_Mu;
   float m_mDs_Mu;
   float m_mD_Mu;
-  float m_mPhi_Mu;
+  float m_mKst0_Mu;
   float m_mBs0_Mu;
   double m_bdtCut;
 
   bool state;
-  bool partialstate;
   
   TNtuple *ntuple;
   float x[20];
@@ -202,15 +179,14 @@ private:
   std::vector<std::string> DsBDTBinList;
   std::vector<std::string> PhiBDTBinList;
 
- std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,TPad*> > > > > > > canpad;
- std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::string> > > > > > > > title;
- std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::string> > > > > > > > bin_detail;
- std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::string> > > > > > > > bin_detail2;
+std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,TPad*> > > > > canpad;
+std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::string> > > > > > title;
+std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::string> > > > > > bin_detail;
  
  
- std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,double> > > > > > > > > fit_results;
- std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,double> > > > > > > > fit_results_phi;
- std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,double> > > > > > > > fit_results_ds;
+std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,double> > > > > > > fit_results;
+std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,double> > > > > > fit_results_phi;
+std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,std::map<std::string,double> > > > > > fit_results_ds;
 
  std::map<std::string,double> Initial_value;
 };

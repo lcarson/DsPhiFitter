@@ -18,14 +18,15 @@ Parameters::Parameters(  )
   , toylocation("NULL")
     //, autolocation("NULL")
   , locationoption("NULL")
-    //, variationoption("NULL")
+  , variationoption("NULL")
   , locations()
   , moption("NULL")
   , doption("NULL")
   , coption("NULL")
+  , soption("NULL")
   , polarity("both")
   , normcat("both")  
-  //, toVary("NULL")
+  , toVary("NULL")
   //, toFix("NULL")
   , readToys(false)
   , genToys(false)
@@ -43,14 +44,53 @@ Parameters::Parameters(  )
   , runEff(false)
   , seed(-999)
   , useSeed(false)
-  //, vary(false)
+  , vary(false)
+  , readSys(false)
   , binned(false)
+  , fitBr(false)
+  , fitFourBr(false)
+  , doMerge(false)
+  , doSensitivity(false)
+  , sensitivityBR(0.0)
+  , doLikelihood(false)
+  , likelihoodBR(0.0)
+  , SetLimits(false)
+  , sensitivityN(0)
   , quickVersion(false)
   , minos(false)
 
 {
   //put variations here
-  //variation[kPidEff]=false;	
+  variation[fixedSig_n]=false;
+  variation[fixedSig_alpha]=false;
+  variation[fixedSig_Sigmaratio]=false;
+  variation[fixedSig_Sigmafrac]=false;
+  variation[fixedSig_NormSigma]=false;
+  variation[fixedSig_NormSigmaRatio]=false;
+  variation[fixedSig_NormYield]=false;
+  variation[fixedSig_BinRatios]=false;
+  variation[fixedBG_DsD0]=false;
+  variation[fixedBG_DsPhi]=false;
+  variation[fixedBG_DKst0]=false;
+  variation[fixedBG_Dsa1]=false;
+  variation[fixedBG_hel]=false;
+  variation[fixedBG_noDsstPhi]=false;
+  variation[fixedBG_noDsa1]=false;
+  variation[fixedBG_slope]=false;
+  variation[fixedBG_Dsa1_smear]=false;
+  variation[fixedBG_DsstKKst_smear]=false;
+  variation[fixedBG_DD_Ratios]=false;
+  variation[fixedBG_DD_Fractions]=false;
+  variation[fixedBG_DsstDst0_endpoints]=false;
+  variation[fixedBG_DsstDst0_shape]=false;
+  variation[fixedBG_Comb_shape]=false;
+  variation[fixedBG_Comb_shape_flat]=false;
+  variation[fixedBG_Comb_shape_line]=false;
+  variation[fixedBG_DsKK_fractions]=false;
+  variation[draw]=false;
+  variation[fixedSig_double]=false;
+  variation[doNothing]=false;
+
 
 }
 
@@ -66,8 +106,8 @@ void Parameters::help()
   std::cout << "               if no number is specified, the toys are " << std::endl;
   std::cout << "               read from the below location " << std::endl;
   std::cout << "    -a <pol>   magnet polarity choice {both,up,down} default: "<< polarity << std::endl;
-  //std::cout << "    -v <type>  vary some quantity according to its error. Choose from:" << std::endl;
-  //std::cout << "                 nothing atm... " << std::endl;
+  std::cout << "    -v <type>  vary some quantity according to its error. Choose from:" << std::endl;
+  std::cout << "                 nothing atm... " << std::endl;
   //std::cout << "    -f <str>   colon-separated list of variables to fix in the likelihood scan" << std::endl;
   std::cout << "    -d <dset>  colon-separated list of strippings. Choose from: s21:s21r1:s24" << std::endl;
   std::cout << "    -c <dset>  colon-separated list of normalisation categories. Choose from: DsD0:DsPhi" << std::endl; 
@@ -75,6 +115,7 @@ void Parameters::help()
   std::cout << "    -p  <N>    Use N bdtPhi bins (default = 1) " << std::endl;
   std::cout << "    -C <Type>:<Method>:<N points> Run many fits and plot significance as a function " << std::endl;
   std::cout << "               of cut value. Examples: MC:BDT:10 or DATA:BDTG:5 " << std::endl;
+  std::cout << "    -f <N>:<Br> Number of sensitivity toys at given branching fraction" << std::endl;
   std::cout << "Locations:  " << std::endl;
   std::cout << "    -L <dir> colon-separated list of locations." << std::endl;
   std::cout << "             At these locations, program looks for:  " << std::endl;
@@ -82,7 +123,7 @@ void Parameters::help()
   std::cout << "    -T <dir> location of toy directory." << std::endl;
   std::cout << "    -s <N> set random number seed" << std::endl;
   //std::cout << "    -A <dir> location for fit results in automatic mode" << std::endl;
-  //std::cout << "    -V <dir> location for fit results in systematics mode" << std::endl;
+  std::cout << "    -V <dir> location for fit results in systematics mode" << std::endl;
   std::cout << "Switches:  " << std::endl;
   std::cout << "    -S sum over charges" << std::endl;
   std::cout << "    -Y Fit years separately" << std::endl;
@@ -96,6 +137,10 @@ void Parameters::help()
   std::cout << "      (though non-quick version needed first to make ntuples)" <<std::endl;
   std::cout << "    -H Split data into helicty bins" << std::endl;
   std::cout << "    -E Run Phi/Ds BDT efficiency fits (i.e. phi mass or Ds mass)" << std::endl;
+  std::cout << "    -R Fit single branching ratio " << std::endl;
+  std::cout << "    -r Fit four seperate branching ratio " << std::endl;
+  std::cout << "    -D merge D mode plots " << std::endl;
+  std::cout << "    -I Set Limits on branching fraction " << std::endl;
 
   std::cout << "********************************************************************" << std::endl;
   std::cout << "Typical executions are:" << std::endl;
@@ -157,13 +202,25 @@ int Parameters::readCommandLine(unsigned int narg, char *argv[])
       case int('Y'):
         splitYears=true;
         break;
+      case int('R'):
+        fitBr=true;
+        break;
+      case int('r'):
+        fitFourBr=true;
+        break;
+      case int('D'):
+        doMerge=true;
+        break;
+      case int('I'):
+        SetLimits=true;
+        break;
       //case int('C'):
       //  manyFits=true;
       //  break;
-	    //case int('v'):
-        //if(i==narg){OK=false;break;}if(int(argv[i][0])==int('-')){OK=false;break;}i++;//always needed if option takes an argument
-        //toVary=std::string(argv[i-1]);
-        //break;
+	    case int('v'):
+        if(i==narg){readSys=true;break;}if(int(argv[i][0])==int('-')){readSys=true;break;}i++;//if option sometimes takes an argument
+        toVary=std::string(argv[i-1]);
+        break;
 	    //case int('f'):
         //if(i==narg){OK=false;break;}if(int(argv[i][0])==int('-')){OK=false;break;}i++;//always needed if option takes an argument
         //toFix=std::string(argv[i-1]);
@@ -172,11 +229,11 @@ int Parameters::readCommandLine(unsigned int narg, char *argv[])
       	if(i==narg){OK=false;break;}if(int(argv[i][0])==int('-')){OK=false;break;}i++;//always needed if option takes an argument
 	      polarity=std::string(argv[i-1]);
         break;
-	    //case int('V'):
-        //if(i==narg){OK=false;break;}if(int(argv[i][0])==int('-')){OK=false;break;}i++;//always needed if option takes an argument
-        //variationoption=std::string(argv[i-1]);
-        //batch=true;
-        //break;
+	    case int('V'):
+        if(i==narg){OK=false;break;}if(int(argv[i][0])==int('-')){OK=false;break;}i++;//always needed if option takes an argument
+        variationoption=std::string(argv[i-1]);
+        batch=true;
+        break;
 	    //case int('A'):
         //automatic=true;
         //if(i==narg){OK=false;break;}if(int(argv[i][0])==int('-')){OK=false;break;}i++;//always needed if option takes an argument
@@ -226,6 +283,17 @@ int Parameters::readCommandLine(unsigned int narg, char *argv[])
         manyFits=true;
         BDToption=std::string(argv[i-1]);
         break;
+      case int('f'):
+        if(i==narg){OK=false;break;}if(int(argv[i][0])==int('-')){OK=false;break;}i++;//always needed if option takes an argument
+        doSensitivity=true;
+        //sensitivityBR=atof(argv[i-1]);
+        soption=std::string(argv[i-1]);
+        break;
+      case int('l'):
+        if(i==narg){OK=false;break;}if(int(argv[i][0])==int('-')){OK=false;break;}i++;//always needed if option takes an argument
+        doLikelihood=true;
+        likelihoodBR=atof(argv[i-1]);
+        break;
 
       default:
         std::cout << " Don't recognise option '"<< s <<"'" << std::endl;
@@ -245,7 +313,7 @@ int Parameters::readCommandLine(unsigned int narg, char *argv[])
 		CommonTools::split(moption, tokens, ":");
 		for(unsigned int i=0;i<tokens.size();i++){
 			modes[tokens[i]]=true;
-			if(tokens[i]!=Ds2PhiPi && tokens[i]!=Ds2KKPi && tokens[i]!=Ds2PiPiPi && tokens[i]!=Ds2KPiPi){
+			if(tokens[i]!=Ds2PhiPi && tokens[i]!=Ds2KKPi && tokens[i]!=Ds2PiPiPi && tokens[i]!=Ds2KPiPi && tokens[i]!=D2PiPiPi && tokens[i]!=D2KKPi && tokens[i]!=D2PiKPi ){
 				std::cout << " Don't recognise mode: " << tokens[i] << std::endl;
 				OK=false;
 			}
@@ -260,7 +328,7 @@ int Parameters::readCommandLine(unsigned int narg, char *argv[])
     CommonTools::split(coption, tokens, ":");
     for(unsigned int i=0;i<tokens.size();i++){
       Bmodes[tokens[i]]=true;
-      if(tokens[i]!=DsD0 && tokens[i]!=DsPhi && tokens[i]!=DsPhiSide){
+      if(tokens[i]!=DsD0 && tokens[i]!=DsPhi && tokens[i]!=DsPhiSide && tokens[i]!=DsPhiSideWide && tokens[i]!=DD0  && tokens[i]!=DKst0  && tokens[i]!=DKst0Side ){
         std::cout << " Don't recognise mode: " << tokens[i] << std::endl;
         OK=false;
       }
@@ -295,13 +363,13 @@ int Parameters::readCommandLine(unsigned int narg, char *argv[])
 
       if( count_type!=1 || count_method!=1 || count_points!=1) {
           std::cout << " Incorrect number of options provided, only use one of each e.g. MC:BDT:5" <<std::endl;
-          OK = false;
+          OK=false;
         }
     }
   }
   
 	if(locationoption==null){
-		if(!genToys&&!readToys&&!quickVersion){
+		if(!genToys&&!readToys&&!quickVersion&&!doSensitivity){
 			std::cout << " The location -L not specified. Generating data from the model." << std::endl;
       genToys=true;
       nToys=1;
@@ -342,31 +410,37 @@ int Parameters::readCommandLine(unsigned int narg, char *argv[])
 	if(batch){
 		std::cout << "Set to batch mode!"<< std::endl;
 	}
-	
-	//if(toVary!=null){
-	  //vary=true;
-  	  //bool understood=false;
-  	  //for(std::map<std::string,bool>::iterator mi=variation.begin();mi!=variation.end();mi++){
-    	    //if((*mi).first==toVary){
-	      //(*mi).second=true;
-            //understood=true;
-            //break;
-	    //}
-	    //}
-          //if(!understood){
-	    //std::cout<<"Don't understand quantity to vary: '"<< toVary <<"'"<<std::endl;
-    	  //OK=false;
-          //}
-          //if(variationoption==null){
-	    //std::cout<<"Must specify fit result storage location with -V <someplace>"<<std::endl;
-    	  //OK=false;
-          //}
-	  //}else{
-          //if(variationoption!=null){
-	    //std::cout<<"Does not make sense to have -V option without -v"<<std::endl;
-	  // OK=false;
-	  //  }
-	  //} //end of else (from toVary)
+
+	if(toVary!=null){
+	  vary=true;
+    std::vector<std::string> tokens;
+    CommonTools::split(toVary, tokens, ":");
+    for(unsigned int i=0;i<tokens.size();i++){
+      bool understood=false;
+      for(std::map<std::string,bool>::iterator mi=variation.begin();mi!=variation.end();mi++){
+        if((*mi).first==tokens[i]){
+          (*mi).second=true;
+          understood=true;
+          break;
+        }
+      }
+        
+      if(!understood){
+        std::cout<<"Don't understand quantity to vary: '"<< toVary <<"'"<<std::endl;
+        OK=false;
+      }
+    }
+    if(variationoption==null){
+      std::cout<<"Must specify fit result storage location with -V <someplace>"<<std::endl;
+      OK=false;
+    }
+	}else{
+    if(variationoption!=null){
+      std::cout<<"Plotting variances in folder " <<variationoption<<std::endl;
+      std::cout<<"Assuming they all have the same options..." <<std::endl;
+
+    }
+	} //end of else (from toVary)
   	
 	if(polarity!=std::string("sensitive")&&polarity!=std::string("both")&&polarity!=std::string("up")&&polarity!=std::string("down")&&polarity!=std::string("dn")){
 		std::cout << "Don't recognise -M option \""<<polarity<<"\" {both,up,down}"<< std::endl;
@@ -377,7 +451,7 @@ int Parameters::readCommandLine(unsigned int narg, char *argv[])
 
 
   //if(not genToys){
-  if(!genToys && !readToys){
+  if(!genToys && !readToys && ! doSensitivity){
     tokens.clear();
     if(doption==null){
       std::cout << "Dataset unspecified (-d <dset>)." << std::endl;
@@ -395,6 +469,26 @@ int Parameters::readCommandLine(unsigned int narg, char *argv[])
       //  tmp[(*mi).first]=false;
       //}
       dsetsFound[tokens[i]]=tmp; //not clear what's supposed to happen here if there's no variation asked for...
+    }
+  }
+
+  // Set up sensitivity toys
+  tokens.clear();
+  if(doSensitivity){
+    if(soption==null){
+      std::cout << " N and Br must be specified" << std::endl;
+      OK=false;
+    }else{
+      CommonTools::split(soption, tokens, ":");
+      if(tokens.size()!=2) {
+        std::cout << "Requires two arguments: <N>:<BR>"  << std::endl;
+        OK=false;
+      } else{
+        sensitivityN  = atoi(tokens[0].c_str());
+        sensitivityBR = atof(tokens[1].c_str());
+        fitBr = true;
+      }
+
     }
   }
 
